@@ -82,6 +82,11 @@ THEME_RULES: tuple[tuple[str, tuple[str, ...], tuple[str, ...]], ...] = (
 )
 
 
+def require_github_actions() -> None:
+    if os.getenv("GITHUB_ACTIONS") != "true":
+        raise SystemExit("Data refresh is disabled locally. Run this updater from GitHub Actions only.")
+
+
 def env_int(name: str, default: int) -> int:
     value = os.getenv(name)
     if not value:
@@ -524,6 +529,7 @@ def merge_quote(base: dict, summary: dict | None, info: dict | None) -> dict:
 
 
 def main() -> int:
+    require_github_actions()
     previous = read_json(LATEST, {"stocks": []})
     min_market_cap = env_int("US_MIN_MARKET_CAP", 1_000_000_000)
     max_stocks = env_int("US_MAX_STOCKS", 1000)

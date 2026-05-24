@@ -2,7 +2,7 @@
 
 `index.html`은 엑셀 `S-RIM 마법사 Plus_V23.xlsx`의 핵심 RIM 계산식을 웹 계산기로 옮긴 파일입니다.
 
-매일 최신 기준값은 GitHub Actions가 `scripts/update_market_data.py`와 `scripts/update_us_market_data.py`를 실행해 `data/latest.json`, `data/us_latest.json`을 갱신합니다.
+최신 기준값은 로컬 PC에서 갱신하지 않고 GitHub Actions에서만 갱신합니다. 예약 작업은 매일 한국시간 20:30에 실행되며, `scripts/update_market_data.py`와 `scripts/update_us_market_data.py`를 실행해 `data/latest.json`, `data/us_latest.json`을 업데이트한 뒤 GitHub Pages에 배포합니다.
 
 데이터 갱신 범위:
 - KRX KIND 상장법인목록 기준 KOSPI/KOSDAQ 전체 상장회사

@@ -25,6 +25,11 @@ MARKETS = {"KOSPI": "0", "KOSDAQ": "1"}
 REALTIME_CHUNK_SIZE = 80
 
 
+def require_github_actions() -> None:
+    if os.getenv("GITHUB_ACTIONS") != "true":
+        raise SystemExit("Data refresh is disabled locally. Run this updater from GitHub Actions only.")
+
+
 def read_json(path: Path, fallback: dict) -> dict:
     if not path.exists():
         return fallback
@@ -462,6 +467,7 @@ def env_int(name: str, default: int) -> int:
 
 
 def main() -> int:
+    require_github_actions()
     previous = read_json(LATEST, {"stocks": []})
     failures = []
 

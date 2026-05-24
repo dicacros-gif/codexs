@@ -2,7 +2,8 @@ name: Update S-RIM data
 
 on:
   schedule:
-    - cron: "20 0 * * *"
+    # Runs every day at 20:30 KST. GitHub cron uses UTC, so this is 11:30 UTC.
+    - cron: "30 11 * * *"
   workflow_dispatch:
 
 permissions:
@@ -10,9 +11,15 @@ permissions:
   pages: write
   id-token: write
 
+concurrency:
+  group: update-srim-data
+  cancel-in-progress: false
+
 jobs:
   update:
     runs-on: ubuntu-latest
+    env:
+      TZ: Asia/Seoul
     steps:
       - name: Check out repository
         uses: actions/checkout@v4
