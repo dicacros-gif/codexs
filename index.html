@@ -769,6 +769,207 @@
     .bar-fair { fill: #0f7a55; }
     .bar-buy { fill: #1d4ed8; }
     .mobile-only { display: none; }
+
+    body.terminal-theme {
+      --bg: #05070a;
+      --surface: #0b1117;
+      --surface-2: #122018;
+      --ink: #e7f6ff;
+      --muted: #9aa7b8;
+      --line: #273241;
+      --line-2: #37506a;
+      --green: #22c55e;
+      --green-2: #86efac;
+      --amber: #f59e0b;
+      --red: #ef4444;
+      --blue: #38bdf8;
+      --shadow: 0 18px 36px rgba(0, 0, 0, 0.35);
+      background: #05070a;
+      color: var(--ink);
+    }
+    body.terminal-theme header {
+      border-bottom-color: #334155;
+      background: rgba(5, 7, 10, 0.96);
+    }
+    body.terminal-theme h1 {
+      color: #fbbf24;
+      text-shadow: 0 0 14px rgba(251, 191, 36, 0.28);
+    }
+    body.terminal-theme .brand small {
+      color: #67e8f9;
+    }
+    body.terminal-theme .top-tab,
+    body.terminal-theme .btn,
+    body.terminal-theme .market-tab,
+    body.terminal-theme .tab,
+    body.terminal-theme .rank-filter button,
+    body.terminal-theme .rank-view-btn {
+      background: #0f172a;
+      border-color: #334155;
+      color: #cbd5e1;
+    }
+    body.terminal-theme .top-tab {
+      position: relative;
+      text-transform: uppercase;
+      letter-spacing: 0.02em;
+    }
+    body.terminal-theme .top-tab::before,
+    body.terminal-theme .tab::before {
+      content: "";
+      display: inline-block;
+      width: 7px;
+      height: 7px;
+      margin-right: 7px;
+      border-radius: 999px;
+      background: var(--tab-accent, #fbbf24);
+      box-shadow: 0 0 10px var(--tab-accent, #fbbf24);
+      vertical-align: 1px;
+    }
+    body.terminal-theme .top-tab[data-view-tab="calculator"] { --tab-accent: #fbbf24; color: #fde68a; }
+    body.terminal-theme .top-tab[data-view-tab="ranking"] { --tab-accent: #22c55e; color: #bbf7d0; }
+    body.terminal-theme .top-tab[data-view-tab="us"] { --tab-accent: #38bdf8; color: #bae6fd; }
+    body.terminal-theme .top-tab[data-view-tab="usRanking"] { --tab-accent: #fb7185; color: #fecdd3; }
+    body.terminal-theme .top-tab.active,
+    body.terminal-theme .tab.active,
+    body.terminal-theme .market-tab.active,
+    body.terminal-theme .rank-filter button.active {
+      background: rgba(251, 191, 36, 0.12);
+      border-color: var(--tab-accent, #fbbf24);
+      color: #fff7ed;
+      box-shadow: inset 0 -2px 0 var(--tab-accent, #fbbf24), 0 0 18px rgba(251, 191, 36, 0.12);
+    }
+    body.terminal-theme .tab[data-view="summary"] { --tab-accent: #fbbf24; color: #fde68a; }
+    body.terminal-theme .tab[data-view="peers"] { --tab-accent: #38bdf8; color: #bae6fd; }
+    body.terminal-theme .tab[data-view="quant"] { --tab-accent: #22c55e; color: #bbf7d0; }
+    body.terminal-theme .tab[data-view="forecast"] { --tab-accent: #a78bfa; color: #ddd6fe; }
+    body.terminal-theme .tab[data-view="check"] { --tab-accent: #fb7185; color: #fecdd3; }
+    body.terminal-theme .market-tab[data-market="KOSPI"] { color: #bbf7d0; }
+    body.terminal-theme .market-tab[data-market="KOSDAQ"] { color: #bae6fd; }
+    body.terminal-theme .panel,
+    body.terminal-theme .rank-section,
+    body.terminal-theme .us-card,
+    body.terminal-theme .note-box,
+    body.terminal-theme .peer-panel {
+      background: rgba(11, 17, 23, 0.96);
+      border-color: #273241;
+      box-shadow: var(--shadow);
+    }
+    body.terminal-theme .panel-head,
+    body.terminal-theme .rank-toolbar,
+    body.terminal-theme .rank-section-head,
+    body.terminal-theme .us-card-head,
+    body.terminal-theme .us-toolbar,
+    body.terminal-theme .us-rank-toolbar,
+    body.terminal-theme .tabs {
+      background: #0a1018;
+      border-color: #273241;
+    }
+    body.terminal-theme input,
+    body.terminal-theme select {
+      background: #050b12;
+      border-color: #334155;
+      color: #e7f6ff;
+    }
+    body.terminal-theme th {
+      background: #101826;
+      color: #fbbf24;
+      border-color: #273241;
+    }
+    body.terminal-theme td {
+      color: #dbeafe;
+      border-color: #1f2937;
+    }
+    body.terminal-theme tbody tr:hover td {
+      background: rgba(34, 197, 94, 0.08);
+    }
+    body.terminal-theme .scenario-name {
+      color: #f8fafc;
+    }
+    body.terminal-theme .kpi,
+    body.terminal-theme .us-meta-grid div {
+      background: #07111a;
+      border-color: #273241;
+    }
+    body.terminal-theme .kpi .label,
+    body.terminal-theme .us-meta-grid span,
+    body.terminal-theme .status-line,
+    body.terminal-theme .us-method,
+    body.terminal-theme .stock-helper {
+      color: #94a3b8;
+    }
+    body.terminal-theme .kpi .value,
+    body.terminal-theme .us-meta-grid strong {
+      color: #f8fafc;
+    }
+    .terminal-tape {
+      width: min(1440px, calc(100% - 24px));
+      margin: 10px auto 0;
+      border: 1px solid #273241;
+      border-radius: 8px;
+      background: #050b12;
+      box-shadow: 0 12px 24px rgba(0, 0, 0, 0.28);
+      overflow: hidden;
+    }
+    .terminal-tape-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      padding: 7px 10px;
+      border-bottom: 1px solid #273241;
+      color: #fbbf24;
+      font-family: "Consolas", "Cascadia Mono", monospace;
+      font-size: 0.76rem;
+      font-weight: 950;
+      letter-spacing: 0.04em;
+    }
+    .terminal-tape-head span:last-child {
+      color: #67e8f9;
+      text-align: right;
+    }
+    .terminal-tape-grid {
+      display: flex;
+      gap: 6px;
+      padding: 8px;
+      overflow-x: auto;
+    }
+    .terminal-chip {
+      flex: 0 0 auto;
+      border: 1px solid #334155;
+      border-radius: 6px;
+      background: #0f172a;
+      color: #cbd5e1;
+      min-height: 32px;
+      padding: 0 9px;
+      font-family: "Consolas", "Cascadia Mono", monospace;
+      font-size: 0.76rem;
+      font-weight: 900;
+      white-space: nowrap;
+    }
+    .terminal-chip strong {
+      margin-left: 5px;
+      color: #f8fafc;
+    }
+    .terminal-chip.up {
+      border-color: rgba(34, 197, 94, 0.7);
+      color: #86efac;
+    }
+    .terminal-chip.down {
+      border-color: rgba(239, 68, 68, 0.7);
+      color: #fca5a5;
+    }
+    .terminal-chip.warn {
+      border-color: rgba(245, 158, 11, 0.75);
+      color: #fcd34d;
+    }
+    .terminal-chip.info {
+      border-color: rgba(56, 189, 248, 0.72);
+      color: #7dd3fc;
+    }
+    .terminal-chip.hot {
+      border-color: rgba(251, 113, 133, 0.78);
+      color: #fda4af;
+    }
     @media (max-width: 1060px) {
       main { grid-template-columns: 1fr; }
       .us-layout { grid-template-columns: 1fr; }
@@ -802,7 +1003,7 @@
     }
   </style>
 </head>
-<body>
+<body class="terminal-theme">
   <div class="app">
     <header>
       <div class="topbar">
@@ -824,6 +1025,14 @@
         </div>
       </div>
     </header>
+
+    <section class="terminal-tape" aria-label="크롤링 데이터 터미널 요약">
+      <div class="terminal-tape-head">
+        <span>CRAWL FEED / VALUATION MONITOR</span>
+        <span id="terminalTapeStamp">데이터 동기화 중</span>
+      </div>
+      <div class="terminal-tape-grid" id="terminalTape"></div>
+    </section>
 
     <main id="calculatorView">
       <section class="panel inputs" aria-labelledby="inputTitle">
@@ -1241,6 +1450,12 @@
             <div><span>미래 매출 성장</span><strong id="usFutureRevenueGrowth">-</strong></div>
             <div><span>미래 이익/EPS 성장</span><strong id="usFutureProfitGrowth">-</strong></div>
             <div><span>공매도/애널리스트</span><strong id="usShortAnalyst">-</strong></div>
+            <div><span>베타/RSI</span><strong id="usBetaRsi">-</strong></div>
+            <div><span>52주 변화/이평</span><strong id="usMomentum">-</strong></div>
+            <div><span>현금/부채</span><strong id="usCashDebt">-</strong></div>
+            <div><span>FCF/마진</span><strong id="usFcfProfile">-</strong></div>
+            <div><span>품질 점수</span><strong id="usQualityScore">-</strong></div>
+            <div><span>주주환원/수익률</span><strong id="usYieldProfile">-</strong></div>
             <div><span>데이터 기준</span><strong id="usDataStamp">-</strong></div>
           </div>
         </article>
@@ -2104,7 +2319,7 @@
       $("usDataSummary").textContent = "미국 데이터 없음";
       $("usSelectedName").textContent = "데이터 없음";
       $("usSelectedMeta").textContent = "data/us_latest.json 확인";
-      ["usCurrentPrice", "usTargetPrice", "usTargetUpside", "usFairUpside", "usFairPrice", "usVerdict", "usPeerDelta", "us52w", "usMarketCap", "usVolume", "usPer", "usPeg", "usPs", "usBalanceValuation", "usEvEbitda", "usReturns", "usMargins", "usDebtLiquidity", "usRevenueYoY", "usRevenueQoQ", "usNetIncomeYoY", "usNetIncomeQoQ", "usFutureRevenueGrowth", "usFutureProfitGrowth", "usShortAnalyst", "usDataStamp"].forEach((id) => {
+      ["usCurrentPrice", "usTargetPrice", "usTargetUpside", "usFairUpside", "usFairPrice", "usVerdict", "usPeerDelta", "us52w", "usMarketCap", "usVolume", "usPer", "usPeg", "usPs", "usBalanceValuation", "usEvEbitda", "usReturns", "usMargins", "usDebtLiquidity", "usRevenueYoY", "usRevenueQoQ", "usNetIncomeYoY", "usNetIncomeQoQ", "usFutureRevenueGrowth", "usFutureProfitGrowth", "usShortAnalyst", "usBetaRsi", "usMomentum", "usCashDebt", "usFcfProfile", "usQualityScore", "usYieldProfile", "usDataStamp"].forEach((id) => {
         $(id).textContent = "-";
       });
       $("usPeerSummary").textContent = "표시할 종목 없음";
@@ -2159,6 +2374,12 @@
       $("usFutureRevenueGrowth").innerHTML = `${heatGrowth(finiteNumber(selected.futureRevenueGrowth))} · 5Y 전망`;
       $("usFutureProfitGrowth").innerHTML = `${heatGrowth(finiteNumber(selected.futureProfitGrowth))} · ${escapeHtml(selected.futureProfitGrowthMetric || "EPS Growth Forecast (5Y)")}`;
       $("usShortAnalyst").textContent = `${fmtPct(finiteNumber(selected.shortFloat))} short float · ${selected.analystConsensus || "-"}${Number.isFinite(finiteNumber(selected.analystCount)) ? ` (${Math.round(finiteNumber(selected.analystCount)).toLocaleString("ko-KR")})` : ""}`;
+      $("usBetaRsi").textContent = `${fmtRatio(finiteNumber(selected.beta), 2)} / ${fmtRatio(finiteNumber(selected.rsi), 1)}`;
+      $("usMomentum").innerHTML = `${heatSignedPct(finiteNumber(selected.priceChange52w))} · 50D ${fmtUsd(finiteNumber(selected.sma50))} / 200D ${fmtUsd(finiteNumber(selected.sma200))}`;
+      $("usCashDebt").textContent = `순현금 ${fmtUsdCompact(finiteNumber(selected.netCash))} · 부채 ${fmtUsdCompact(finiteNumber(selected.totalDebt))}`;
+      $("usFcfProfile").textContent = `${fmtUsdCompact(finiteNumber(selected.ttmFreeCashFlow))} · ${fmtPct(finiteNumber(selected.fcfMargin))}`;
+      $("usQualityScore").textContent = `F ${fmtRatio(finiteNumber(selected.piotroskiFScore), 0)} / Z ${fmtRatio(finiteNumber(selected.altmanZScore), 2)}`;
+      $("usYieldProfile").innerHTML = `FCF ${heatSignedPct(finiteNumber(selected.fcfYield), 1, 0.12)} · 주주 ${heatSignedPct(finiteNumber(selected.shareholderYield), 1, 0.12)}`;
       $("usDataStamp").textContent = usQuoteStamp(selected);
       $("usTargetKpi").className = `kpi ${pctKind(valuation.targetUpside)}`;
       $("usFairKpi").className = `kpi ${pctKind(valuation.fairUpside)}`;
@@ -2509,6 +2730,7 @@
         state.rankings = [];
         $("dataStatus").textContent = "기본 기준값 사용";
       }
+      renderTerminalTape();
       updateMarketCounts();
       populateStockPicker();
       applyMarketDefaults();
@@ -2531,6 +2753,7 @@
       } catch (error) {
         state.usLatest = DEFAULT_US_DATA;
       }
+      renderTerminalTape();
       if (state.activeView === "us") renderUsView();
       if (state.activeView === "usRanking") renderUsRanking();
     }
@@ -2552,6 +2775,69 @@
       if (value === true) return "실시간";
       if (value === false) return "지연/최종";
       return "";
+    }
+
+    function terminalChip(label, value, tone = "info", action = "") {
+      const actionAttr = action ? ` data-terminal-action="${escapeHtml(action)}"` : "";
+      return `<button class="terminal-chip ${tone}" type="button"${actionAttr}><span>${escapeHtml(label)}</span><strong>${escapeHtml(value)}</strong></button>`;
+    }
+
+    function renderTerminalTape() {
+      const krStocks = state.latest?.stocks || [];
+      const usList = usStocks();
+      const krCounts = state.latest?.counts || {};
+      const usExchangeCounts = state.usLatest?.exchangeCounts || {};
+      const usThemeCounts = state.usLatest?.themeCounts || {};
+      const krRealtime = krStocks.filter((stock) => stock.hasRealtimePrice === true).length;
+      const krQuarter = krStocks.filter((stock) => stock.hasQuarterFinance === true).length;
+      const usFundamentals = usList.filter((stock) => stock.hasFundamentals === true).length;
+      const usFailures = (state.usLatest?.failures || []).length;
+      const topThemes = Object.entries(usThemeCounts).sort((a, b) => b[1] - a[1]).slice(0, 4);
+      const topThemeNames = new Set(topThemes.map(([theme]) => theme));
+      const featuredThemes = ["AI", "AI SW", "SW", "전력", "광통신"]
+        .filter((theme) => usThemeCounts[theme] && !topThemeNames.has(theme))
+        .map((theme) => [theme, usThemeCounts[theme]]);
+      const chips = [
+        terminalChip("KRX KOSPI", (krCounts.KOSPI || stocksForMarket("KOSPI").length || 0).toLocaleString("ko-KR"), "up", "krRank:rankKospiSection"),
+        terminalChip("KRX KOSDAQ", (krCounts.KOSDAQ || stocksForMarket("KOSDAQ").length || 0).toLocaleString("ko-KR"), "info", "krRank:rankKosdaqSection"),
+        terminalChip("KR RT PRICE", krRealtime.toLocaleString("ko-KR"), "up", "view:ranking"),
+        terminalChip("KR QUARTER", krQuarter.toLocaleString("ko-KR"), "warn", "view:calculator"),
+        terminalChip("US UNIVERSE", usList.length.toLocaleString("ko-KR"), "info", "view:us"),
+        terminalChip("US TARGET", (state.usLatest?.targetCount || 0).toLocaleString("ko-KR"), "up", "view:usRanking"),
+        terminalChip("NASDAQ", (usExchangeCounts.NASDAQ || 0).toLocaleString("ko-KR"), "info", "usExchange:NASDAQ"),
+        terminalChip("NYSE", (usExchangeCounts.NYSE || 0).toLocaleString("ko-KR"), "info", "usExchange:NYSE"),
+        terminalChip("US FUND", usFundamentals.toLocaleString("ko-KR"), "up", "view:usRanking"),
+        terminalChip("US FAIL", usFailures.toLocaleString("ko-KR"), usFailures ? "down" : "up", "view:usRanking"),
+        ...topThemes.map(([theme, count], index) => terminalChip(theme, count.toLocaleString("ko-KR"), index === 0 ? "hot" : "warn", `usTheme:${theme}`)),
+        ...featuredThemes.map(([theme, count]) => terminalChip(theme, count.toLocaleString("ko-KR"), "info", `usTheme:${theme}`))
+      ];
+      $("terminalTape").innerHTML = chips.join("");
+      $("terminalTapeStamp").textContent = `KR ${formatDataDate(state.latest?.generatedAt)} / US ${formatDataDate(state.usLatest?.generatedAt)}`;
+    }
+
+    function handleTerminalAction(action) {
+      if (!action) return;
+      const [type, value] = action.split(":");
+      if (type === "view") {
+        setTopView(value);
+        return;
+      }
+      if (type === "krRank") {
+        setTopView("ranking");
+        requestAnimationFrame(() => moveToKrRankSection(value));
+        return;
+      }
+      if (type === "usExchange") {
+        state.usRankExchange = value || "ALL";
+        state.usRankTheme = "";
+        setTopView("usRanking");
+        return;
+      }
+      if (type === "usTheme") {
+        state.usRankExchange = "ALL";
+        state.usRankTheme = value || "";
+        setTopView("usRanking");
+      }
     }
 
     function saveCase() {
@@ -2659,6 +2945,10 @@
       document.querySelectorAll("input[type=radio]").forEach((input) => input.addEventListener("change", calculate));
       document.querySelectorAll("[data-view-tab]").forEach((tab) => {
         tab.addEventListener("click", () => setTopView(tab.dataset.viewTab));
+      });
+      $("terminalTape").addEventListener("click", (event) => {
+        const target = event.target.closest("[data-terminal-action]");
+        if (target) handleTerminalAction(target.dataset.terminalAction);
       });
       $("krRankTabs").addEventListener("click", (event) => {
         const target = event.target.closest("[data-rank-target]");
