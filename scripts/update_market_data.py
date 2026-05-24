@@ -380,6 +380,7 @@ def parse_market_rows(html_text: str, market: str, companies: dict[str, dict]) -
                 "volume": volume,
                 "per": per,
                 "roe": roe / 100 if roe is not None else None,
+                "priceSource": "Naver Finance market summary",
                 "sourceUrl": f"https://finance.naver.com/item/main.naver?code={code}",
             }
         )
@@ -468,7 +469,6 @@ def env_int(name: str, default: int) -> int:
 
 def main() -> int:
     require_github_actions()
-    previous = read_json(LATEST, {"stocks": []})
     failures = []
 
     try:
@@ -506,12 +506,10 @@ def main() -> int:
                 "per": None,
                 "roe": None,
                 "hasMarketData": False,
+                "priceSource": None,
                 "sourceUrl": f"https://finance.naver.com/item/main.naver?code={code}",
             }
         stocks = list(indexed.values())
-
-    if not stocks:
-        stocks = previous.get("stocks", [])
 
     quote_fetched_at = dt.datetime.now(dt.timezone.utc).astimezone().isoformat(timespec="seconds")
     if stocks:
@@ -547,7 +545,7 @@ def main() -> int:
         "asOf": generated_at,
         "priceFetchedAt": quote_fetched_at,
         "source": "Naver Finance realtime polling + Naver Finance market summary + KRX KIND listed company list",
-        "priceSource": "Naver Finance realtime polling SERVICE_ITEM",
+        "priceSource": "Naver Finance realtime polling SERVICE_ITEM when available; otherwise Naver Finance market summary for the same run",
         "counts": counts,
         "market": {
             "riskFreeRate": env_float("RISK_FREE_RATE", 0.016),

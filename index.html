@@ -1704,7 +1704,7 @@
               <div class="value" id="usFairUpside">-</div>
             </div>
             <div class="kpi">
-              <div class="label">추정 적정가</div>
+              <div class="label">목표가 기반 적정가</div>
               <div class="value" id="usFairPrice">-</div>
             </div>
             <div class="kpi" id="usVerdictKpi">
@@ -1733,7 +1733,6 @@
             <div><span>순이익 YoY</span><strong id="usNetIncomeYoY">-</strong></div>
             <div><span>순이익 QoQ</span><strong id="usNetIncomeQoQ">-</strong></div>
             <div><span>미래 매출 성장</span><strong id="usFutureRevenueGrowth">-</strong></div>
-            <div><span>미래 이익 성장</span><strong id="usFutureProfitGrowth">-</strong></div>
             <div><span>미래 EPS 성장</span><strong id="usFutureEpsGrowth">-</strong></div>
             <div><span>공매도/애널리스트</span><strong id="usShortAnalyst">-</strong></div>
             <div><span>베타/RSI</span><strong id="usBetaRsi">-</strong></div>
@@ -1760,7 +1759,7 @@
                   <th>종가</th>
                   <th>1년 목표가</th>
                   <th>목표가 대비</th>
-                  <th>추정 적정가</th>
+                  <th>목표가 기반 적정가</th>
                   <th>적정가 대비</th>
                   <th>경쟁사 대비</th>
                   <th>PER</th>
@@ -1775,7 +1774,6 @@
                   <th>순이익 YoY</th>
                   <th>순이익 QoQ</th>
                   <th>미래 매출</th>
-                  <th>미래 이익</th>
                   <th>미래 EPS</th>
                   <th>52주 위치</th>
                   <th>시가총액</th>
@@ -1789,7 +1787,7 @@
         </article>
       </div>
       <div class="us-method">
-        종가는 Nasdaq 종목별 quote info의 latest trade 또는 close 값을 사용하며, 장이 닫혀 있거나 지연 시세인 경우 기준일과 상태를 함께 표시합니다. 추정 적정가는 애널리스트 1년 목표가와 같은 업종 경쟁사의 목표상승률 중간값을 함께 반영합니다.
+        종가는 Nasdaq 종목별 quote info의 latest trade 또는 같은 실행에서 수집한 Nasdaq screener 값을 사용합니다. 목표가 기반 적정가는 애널리스트 1년 목표가가 직접 수집된 경우에만 표시하며, 경쟁사 중간값은 별도 비교 지표로만 표시합니다.
       </div>
     </section>
 
@@ -1824,7 +1822,7 @@
               <th>종가</th>
               <th>1년 목표가</th>
               <th>목표가 대비</th>
-              <th>추정 적정가</th>
+              <th>목표가 기반 적정가</th>
               <th>적정가 대비</th>
               <th>경쟁사 대비</th>
               <th>PER</th>
@@ -1841,7 +1839,6 @@
               <th>순이익 YoY</th>
               <th>순이익 QoQ</th>
               <th>미래 매출</th>
-              <th>미래 이익</th>
               <th>미래 EPS</th>
               <th>부채/자본</th>
               <th>애널리스트</th>
@@ -2082,11 +2079,11 @@
     }
 
     function futureProfitGrowthFor(stock) {
-      return firstFiniteMetric(stock?.forecastNetIncomeYoY, stock?.futureProfitGrowth, stock?.netIncomeGrowthForecast5Y);
+      return firstFiniteMetric(stock?.forecastNetIncomeYoY, stock?.netIncomeGrowthForecast5Y);
     }
 
     function futureEpsGrowthFor(stock) {
-      return firstFiniteMetric(stock?.futureEpsGrowth, stock?.forwardEpsGrowth, stock?.epsGrowthForecast5Y, stock?.futureProfitGrowth);
+      return firstFiniteMetric(stock?.futureEpsGrowth, stock?.forwardEpsGrowth, stock?.epsGrowthForecast5Y);
     }
 
     function fmtCount(value) {
@@ -2755,18 +2752,10 @@
       const targetUpside = Number.isFinite(finiteNumber(stock.targetUpside))
         ? finiteNumber(stock.targetUpside)
         : (Number.isFinite(targetPrice) && price > 0 ? targetPrice / price - 1 : NaN);
-      const peerFairPrice = price > 0 && Number.isFinite(peerMedian) ? price * (1 + peerMedian) : NaN;
-      let fairPrice = NaN;
-      if (Number.isFinite(targetUpside) && Number.isFinite(targetPrice) && Number.isFinite(peerFairPrice)) {
-        fairPrice = targetPrice * 0.65 + peerFairPrice * 0.35;
-      } else if (Number.isFinite(targetUpside) && Number.isFinite(targetPrice)) {
-        fairPrice = targetPrice;
-      } else if (Number.isFinite(peerFairPrice)) {
-        fairPrice = peerFairPrice;
-      }
+      const fairPrice = Number.isFinite(targetPrice) ? targetPrice : NaN;
       const fairUpside = price > 0 && Number.isFinite(fairPrice) ? fairPrice / price - 1 : NaN;
       const peerDelta = Number.isFinite(targetUpside) && Number.isFinite(peerMedian) ? targetUpside - peerMedian : NaN;
-      return { price, targetPrice, targetUpside, peers, peerMedian, peerFairPrice, fairPrice, fairUpside, peerDelta };
+      return { price, targetPrice, targetUpside, peers, peerMedian, fairPrice, fairUpside, peerDelta };
     }
 
     function usVerdict(value) {
@@ -2880,7 +2869,6 @@
           <td>${heatGrowth(finiteNumber(item.netIncomeYoY), item.netIncomeIncreased)}</td>
           <td>${heatGrowth(finiteNumber(item.netIncomeQoQ), item.netIncomeQoQIncreased)}</td>
           <td>${heatGrowth(futureRevenueGrowthFor(item))}</td>
-          <td>${heatGrowth(futureProfitGrowthFor(item))}</td>
           <td>${heatGrowth(futureEpsGrowthFor(item))}</td>
           <td>${format52w(item)}</td>
           <td>${fmtUsdCompact(finiteNumber(item.marketCap))}</td>
@@ -2894,7 +2882,7 @@
       $("usDataSummary").textContent = "미국 데이터 없음";
       $("usSelectedName").textContent = "데이터 없음";
       $("usSelectedMeta").textContent = "data/us_latest.json 확인";
-      ["usCurrentPrice", "usTargetPrice", "usTargetUpside", "usFairUpside", "usFairPrice", "usVerdict", "usPeerDelta", "us52w", "usMarketCap", "usVolume", "usPer", "usPeg", "usPs", "usBalanceValuation", "usEvEbitda", "usReturns", "usMargins", "usDebtLiquidity", "usRevenueYoY", "usRevenueQoQ", "usNetIncomeYoY", "usNetIncomeQoQ", "usFutureRevenueGrowth", "usFutureProfitGrowth", "usFutureEpsGrowth", "usShortAnalyst", "usBetaRsi", "usMomentum", "usCashDebt", "usFcfProfile", "usQualityScore", "usYieldProfile", "usDataStamp"].forEach((id) => {
+      ["usCurrentPrice", "usTargetPrice", "usTargetUpside", "usFairUpside", "usFairPrice", "usVerdict", "usPeerDelta", "us52w", "usMarketCap", "usVolume", "usPer", "usPeg", "usPs", "usBalanceValuation", "usEvEbitda", "usReturns", "usMargins", "usDebtLiquidity", "usRevenueYoY", "usRevenueQoQ", "usNetIncomeYoY", "usNetIncomeQoQ", "usFutureRevenueGrowth", "usFutureEpsGrowth", "usShortAnalyst", "usBetaRsi", "usMomentum", "usCashDebt", "usFcfProfile", "usQualityScore", "usYieldProfile", "usDataStamp"].forEach((id) => {
         $(id).textContent = "-";
       });
       $("usPeerSummary").textContent = "표시할 종목 없음";
@@ -2947,7 +2935,6 @@
       $("usNetIncomeYoY").innerHTML = `${heatGrowth(finiteNumber(selected.netIncomeYoY), selected.netIncomeIncreased)}${Number.isFinite(finiteNumber(selected.netIncomeQuarterMillions)) ? ` · ${fmtUsdMillions(finiteNumber(selected.netIncomeQuarterMillions))}` : ""}`;
       $("usNetIncomeQoQ").innerHTML = `${heatGrowth(finiteNumber(selected.netIncomeQoQ), selected.netIncomeQoQIncreased)}${Number.isFinite(finiteNumber(selected.netIncomePreviousQuarterMillions)) ? ` · 전분기 ${fmtUsdMillions(finiteNumber(selected.netIncomePreviousQuarterMillions))}` : ""}`;
       $("usFutureRevenueGrowth").innerHTML = `${heatGrowth(futureRevenueGrowthFor(selected))} · 5Y 전망`;
-      $("usFutureProfitGrowth").innerHTML = `${heatGrowth(futureProfitGrowthFor(selected))} · 이익 전망`;
       $("usFutureEpsGrowth").innerHTML = `${heatGrowth(futureEpsGrowthFor(selected))} · EPS 5Y`;
       $("usShortAnalyst").textContent = `${fmtPct(finiteNumber(selected.shortFloat))} short float · ${selected.analystConsensus || "-"}${Number.isFinite(finiteNumber(selected.analystCount)) ? ` (${Math.round(finiteNumber(selected.analystCount)).toLocaleString("ko-KR")})` : ""}`;
       $("usBetaRsi").textContent = `${fmtRatio(finiteNumber(selected.beta), 2)} / ${fmtRatio(finiteNumber(selected.rsi), 1)}`;
@@ -3074,7 +3061,6 @@
           <td>${heatGrowth(finiteNumber(stock.netIncomeYoY), stock.netIncomeIncreased)}</td>
           <td>${heatGrowth(finiteNumber(stock.netIncomeQoQ), stock.netIncomeQoQIncreased)}</td>
           <td>${heatGrowth(futureRevenueGrowthFor(stock))}</td>
-          <td>${heatGrowth(futureProfitGrowthFor(stock))}</td>
           <td>${heatGrowth(futureEpsGrowthFor(stock))}</td>
           <td>${fmtRatio(finiteNumber(stock.debtEquity), 2)}</td>
           <td>${escapeHtml(stock.analystConsensus || "-")}${Number.isFinite(finiteNumber(stock.analystCount)) ? ` (${Math.round(finiteNumber(stock.analystCount)).toLocaleString("ko-KR")})` : ""}</td>

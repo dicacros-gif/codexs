@@ -462,9 +462,7 @@ def parse_stockanalysis_fundamentals(symbol: str) -> dict | None:
         "revenueGrowthForecast5Y": revenue_growth_5y,
         "epsGrowthForecast5Y": eps_growth_5y,
         "futureRevenueGrowth": revenue_growth_5y,
-        "futureProfitGrowth": eps_growth_5y,
         "futureEpsGrowth": eps_growth_5y,
-        "futureProfitGrowthMetric": "EPS Growth Forecast (5Y)",
         "ttmRevenue": extract_stat_metric(stats_text, "revenue"),
         "ttmGrossProfit": extract_stat_metric(stats_text, "gp"),
         "ttmOperatingIncome": extract_stat_metric(stats_text, "opinc"),
@@ -755,9 +753,17 @@ def merge_quote(base: dict, summary: dict | None, info: dict | None) -> dict:
     average_volume = parse_number(nested_value(summary or {}, "AverageVolume"))
     share_volume = parse_number(nested_value(summary or {}, "ShareVolume"))
     previous_close = parse_number(nested_value(summary or {}, "PreviousClose"))
-    price = quote_price(info, base.get("price"))
+    quote_last_sale = parse_number(deep_value(info, "primaryData", "lastSalePrice"))
+    price = quote_last_sale if quote_last_sale is not None else base.get("price")
     volume = quote_volume(info, summary, base.get("volume"))
     market_cap = quote_market_cap(summary, base.get("marketCap"))
+    stock_price_source = (
+        "Nasdaq quote info primaryData.lastSalePrice"
+        if quote_last_sale is not None
+        else "Nasdaq screener lastSale"
+        if base.get("price") is not None
+        else None
+    )
     net_change = parse_number(deep_value(info, "primaryData", "netChange"))
     pct_change = parse_number(deep_value(info, "primaryData", "percentageChange"))
 
@@ -782,7 +788,7 @@ def merge_quote(base: dict, summary: dict | None, info: dict | None) -> dict:
         "marketStatus": strip_html(deep_value(info, "marketStatus")) or None,
         "priceAsOf": strip_html(deep_value(info, "primaryData", "lastTradeTimestamp")) or None,
         "isRealTime": deep_value(info, "primaryData", "isRealTime") if isinstance(deep_value(info, "primaryData", "isRealTime"), bool) else None,
-        "priceSource": "Nasdaq quote info primaryData.lastSalePrice",
+        "priceSource": stock_price_source,
         "netChange": net_change,
         "pctChange": pct_change / 100 if pct_change is not None else None,
         "targetPrice": target_price,
@@ -798,7 +804,6 @@ def merge_quote(base: dict, summary: dict | None, info: dict | None) -> dict:
 
 def main() -> int:
     require_github_actions()
-    previous = read_json(LATEST, {"stocks": []})
     min_market_cap = env_int("US_MIN_MARKET_CAP", 1_000_000_000)
     max_stocks = env_int("US_MAX_STOCKS", 1000)
     workers = max(1, min(env_int("US_SUMMARY_WORKERS", 8), 16))
@@ -868,9 +873,6 @@ def main() -> int:
         merged["theme"] = merged["themeTags"][0] if merged["themeTags"] else "기타"
         merged["detailedSector"] = detect_detail_sector(merged)
         stocks.append(merged)
-    if not stocks:
-        stocks = previous.get("stocks", [])
-
     stocks.sort(key=lambda item: (item.get("sector", ""), item.get("industry", ""), -(item.get("marketCap") or 0)))
     counts: dict[str, int] = {}
     exchange_counts: dict[str, int] = {}
@@ -891,7 +893,7 @@ def main() -> int:
         "generatedAt": generated_at,
         "asOf": generated_at,
         "source": "Nasdaq screener stocks API + Nasdaq quote info and summary APIs",
-        "priceSource": "Nasdaq quote info primaryData.lastSalePrice",
+        "priceSource": "Nasdaq quote info primaryData.lastSalePrice when available; otherwise Nasdaq screener lastSale for the same run",
         "filters": {
             "country": "United States",
             "minimumMarketCap": min_market_cap,

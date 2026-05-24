@@ -1,6 +1,12 @@
 name: Update S-RIM data
 
 on:
+  push:
+    branches:
+      - main
+    paths:
+      - ".github/workflows/update-srim-data.yml"
+      - "scripts/**"
   schedule:
     # Runs every day at 20:30 KST. GitHub cron uses UTC, so this is 11:30 UTC.
     - cron: "30 11 * * *"
