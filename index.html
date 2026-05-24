@@ -599,6 +599,40 @@
       color: var(--green);
       font-weight: 950;
     }
+    .heat {
+      --heat-bg: #fff;
+      --heat-border: var(--line);
+      --heat-fg: var(--ink);
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 23px;
+      padding: 0 7px;
+      border-radius: 6px;
+      border: 1px solid var(--heat-border);
+      background: var(--heat-bg);
+      color: var(--heat-fg);
+      font-size: 0.76rem;
+      font-weight: 950;
+      white-space: nowrap;
+      line-height: 1.2;
+    }
+    .heat-positive {
+      color: #064e3b;
+    }
+    .heat-negative {
+      color: #7f1d1d;
+    }
+    .kpi .value .heat {
+      min-height: auto;
+      padding: 2px 8px;
+      font-size: inherit;
+      border-radius: 7px;
+    }
+    .us-meta-grid .heat {
+      min-height: 21px;
+      font-size: 0.78rem;
+    }
     .pill {
       display: inline-flex;
       align-items: center;
@@ -1490,6 +1524,43 @@
       return `${fmtSignedPct(value)} · ${label}`;
     }
 
+    function heatStyle(value, cap = 1) {
+      if (!Number.isFinite(value)) return "";
+      const magnitude = clamp(Math.abs(value) / cap, 0, 1);
+      const alpha = 0.1 + magnitude * 0.48;
+      const borderAlpha = 0.22 + magnitude * 0.58;
+      if (value >= 0) {
+        return `--heat-bg: rgba(22, 163, 74, ${alpha.toFixed(3)}); --heat-border: rgba(21, 128, 61, ${borderAlpha.toFixed(3)}); --heat-fg: #064e3b;`;
+      }
+      return `--heat-bg: rgba(220, 38, 38, ${alpha.toFixed(3)}); --heat-border: rgba(185, 28, 28, ${borderAlpha.toFixed(3)}); --heat-fg: #7f1d1d;`;
+    }
+
+    function heatSpan(value, text, cap = 1) {
+      if (!Number.isFinite(value)) return "-";
+      const kind = value >= 0 ? "heat-positive" : "heat-negative";
+      return `<span class="heat ${kind}" style="${heatStyle(value, cap)}">${escapeHtml(text)}</span>`;
+    }
+
+    function heatPct(value, digits = 1, cap = 1) {
+      if (!Number.isFinite(value)) return "-";
+      return heatSpan(value, fmtPct(value, digits), cap);
+    }
+
+    function heatSignedPct(value, digits = 1, cap = 1) {
+      if (!Number.isFinite(value)) return "-";
+      return heatSpan(value, fmtSignedPct(value, digits), cap);
+    }
+
+    function heatPctPoint(value, digits = 1, cap = 1) {
+      if (!Number.isFinite(value)) return "-";
+      return heatSpan(value, fmtPctPoint(value, digits), cap);
+    }
+
+    function heatGrowth(value, increased = null, cap = 1) {
+      if (!Number.isFinite(value)) return "-";
+      return heatSpan(value, fmtGrowth(value, increased), cap);
+    }
+
     function fmtCount(value) {
       if (!Number.isFinite(value)) return "-";
       return Math.round(value).toLocaleString("ko-KR");
@@ -1710,17 +1781,17 @@
           <td><span class="scenario-name">${escapeHtml(stock.name || stock.code)}</span></td>
           <td>${fmtWon(item.model.currentPrice)}</td>
           <td>${fmtWon(item.fairPrice)}</td>
-          <td><span class="${item.upside >= 0 ? "rank-upside" : ""}">${fmtPct(item.upside)}</span></td>
+          <td>${heatPct(item.upside)}</td>
           <td>${fmtWon(item.buyPrice)}</td>
           <td>${fmtPct(item.model.roe, 2)}</td>
           <td>${fmtRatio(stock.per, 2)}</td>
           <td>${fmtEok(stock.marketCapEok)}</td>
-          <td>${fmtGrowth(finiteNumber(stock.revenueYoY), stock.revenueIncreased)}</td>
-          <td>${fmtGrowth(finiteNumber(stock.revenueQoQ), stock.revenueQoQIncreased)}</td>
-          <td>${fmtGrowth(finiteNumber(stock.netIncomeYoY), stock.netIncomeIncreased)}</td>
-          <td>${fmtGrowth(finiteNumber(stock.netIncomeQoQ), stock.netIncomeQoQIncreased)}</td>
-          <td>${fmtGrowth(finiteNumber(stock.forecastRevenueYoY), stock.forecastRevenueIncreased)}</td>
-          <td>${fmtGrowth(finiteNumber(stock.forecastNetIncomeYoY), stock.forecastNetIncomeIncreased)}</td>
+          <td>${heatGrowth(finiteNumber(stock.revenueYoY), stock.revenueIncreased)}</td>
+          <td>${heatGrowth(finiteNumber(stock.revenueQoQ), stock.revenueQoQIncreased)}</td>
+          <td>${heatGrowth(finiteNumber(stock.netIncomeYoY), stock.netIncomeIncreased)}</td>
+          <td>${heatGrowth(finiteNumber(stock.netIncomeQoQ), stock.netIncomeQoQIncreased)}</td>
+          <td>${heatGrowth(finiteNumber(stock.forecastRevenueYoY), stock.forecastRevenueIncreased)}</td>
+          <td>${heatGrowth(finiteNumber(stock.forecastNetIncomeYoY), stock.forecastNetIncomeIncreased)}</td>
           <td>${Number.isFinite(finiteNumber(stock.volume)) ? Math.round(finiteNumber(stock.volume)).toLocaleString("ko-KR") : "-"}</td>
         </tr>`;
       }).join("");
@@ -1779,7 +1850,7 @@
           <td><span class="scenario-name">${escapeHtml(stock.name || stock.code)}</span></td>
           <td>${fmtWon(item.model.currentPrice)}</td>
           <td>${fmtWon(item.fairPrice)}</td>
-          <td><span class="rank-upside">${fmtPct(item.upside)}</span></td>
+          <td>${heatPct(item.upside)}</td>
           <td>${fmtWon(item.buyPrice)}</td>
           <td>${fmtPct(item.model.roe, 2)}</td>
           <td>${fmtRatio(stock.per, 2)}</td>
@@ -1999,18 +2070,15 @@
       $("usPeerRows").innerHTML = rows.map((item) => {
         const rowValuation = item.symbol === stock.symbol ? valuation : computeUsValuation(item);
         const selectedClass = item.symbol === stock.symbol ? " class=\"selected-peer\"" : "";
-        const targetKind = pctKind(rowValuation.targetUpside);
-        const fairKind = pctKind(rowValuation.fairUpside);
-        const deltaKind = pctKind(rowValuation.peerDelta);
         return `<tr${selectedClass} data-us-symbol="${escapeHtml(item.symbol)}">
           <td><span class="scenario-name">${escapeHtml(item.symbol)}</span></td>
           <td>${escapeHtml(item.name || item.symbol)}</td>
           <td>${fmtUsd(rowValuation.price)}</td>
           <td>${fmtUsd(rowValuation.targetPrice)}</td>
-          <td><span class="pill ${targetKind}">${fmtSignedPct(rowValuation.targetUpside)}</span></td>
+          <td>${heatSignedPct(rowValuation.targetUpside)}</td>
           <td>${fmtUsd(rowValuation.fairPrice)}</td>
-          <td><span class="pill ${fairKind}">${fmtSignedPct(rowValuation.fairUpside)}</span></td>
-          <td><span class="pill ${deltaKind}">${fmtPctPoint(rowValuation.peerDelta)}</span></td>
+          <td>${heatSignedPct(rowValuation.fairUpside)}</td>
+          <td>${heatPctPoint(rowValuation.peerDelta)}</td>
           <td>${fmtMultiple(finiteNumber(item.per))}</td>
           <td>${fmtMultiple(finiteNumber(item.forwardPer))}</td>
           <td>${fmtMultiple(finiteNumber(item.peg))}</td>
@@ -2018,12 +2086,12 @@
           <td>${fmtMultiple(finiteNumber(item.priceToFcf))}</td>
           <td>${fmtPct(finiteNumber(item.roe))}</td>
           <td>${fmtPct(finiteNumber(item.profitMargin))}</td>
-          <td>${fmtGrowth(finiteNumber(item.revenueYoY), item.revenueIncreased)}</td>
-          <td>${fmtGrowth(finiteNumber(item.revenueQoQ), item.revenueQoQIncreased)}</td>
-          <td>${fmtGrowth(finiteNumber(item.netIncomeYoY), item.netIncomeIncreased)}</td>
-          <td>${fmtGrowth(finiteNumber(item.netIncomeQoQ), item.netIncomeQoQIncreased)}</td>
-          <td>${fmtGrowth(finiteNumber(item.futureRevenueGrowth))}</td>
-          <td>${fmtGrowth(finiteNumber(item.futureProfitGrowth))}</td>
+          <td>${heatGrowth(finiteNumber(item.revenueYoY), item.revenueIncreased)}</td>
+          <td>${heatGrowth(finiteNumber(item.revenueQoQ), item.revenueQoQIncreased)}</td>
+          <td>${heatGrowth(finiteNumber(item.netIncomeYoY), item.netIncomeIncreased)}</td>
+          <td>${heatGrowth(finiteNumber(item.netIncomeQoQ), item.netIncomeQoQIncreased)}</td>
+          <td>${heatGrowth(finiteNumber(item.futureRevenueGrowth))}</td>
+          <td>${heatGrowth(finiteNumber(item.futureProfitGrowth))}</td>
           <td>${format52w(item)}</td>
           <td>${fmtUsdCompact(finiteNumber(item.marketCap))}</td>
           <td>${fmtCount(finiteNumber(item.volume))}</td>
@@ -2068,10 +2136,10 @@
       $("usSelectedMeta").textContent = `${usExchangeGroup(selected)} · ${usThemeTags(selected).slice(0, 2).join(", ") || "-"} · ${selected.industry || "-"} · ${usQuoteStamp(selected)}`;
       $("usCurrentPrice").textContent = fmtUsd(valuation.price);
       $("usTargetPrice").textContent = fmtUsd(valuation.targetPrice);
-      $("usTargetUpside").textContent = fmtSignedPct(valuation.targetUpside);
+      $("usTargetUpside").innerHTML = heatSignedPct(valuation.targetUpside);
       $("usFairPrice").textContent = fmtUsd(valuation.fairPrice);
-      $("usFairUpside").textContent = fmtSignedPct(valuation.fairUpside);
-      $("usPeerDelta").textContent = `${fmtPctPoint(valuation.peerDelta)} / 경쟁사 중간 ${fmtSignedPct(valuation.peerMedian)}`;
+      $("usFairUpside").innerHTML = heatSignedPct(valuation.fairUpside);
+      $("usPeerDelta").innerHTML = `${heatPctPoint(valuation.peerDelta)} / 경쟁사 중간 ${heatSignedPct(valuation.peerMedian)}`;
       $("usVerdict").textContent = verdict.text;
       $("us52w").textContent = format52w(selected);
       $("usMarketCap").textContent = fmtUsdCompact(finiteNumber(selected.marketCap));
@@ -2084,12 +2152,12 @@
       $("usReturns").textContent = `${fmtPct(finiteNumber(selected.roe))} / ${fmtPct(finiteNumber(selected.roic))}`;
       $("usMargins").textContent = `${fmtPct(finiteNumber(selected.grossMargin))} / ${fmtPct(finiteNumber(selected.operatingMargin))} / ${fmtPct(finiteNumber(selected.profitMargin))}`;
       $("usDebtLiquidity").textContent = `${fmtRatio(finiteNumber(selected.debtEquity), 2)} / ${fmtRatio(finiteNumber(selected.currentRatio), 2)}`;
-      $("usRevenueYoY").textContent = `${fmtGrowth(finiteNumber(selected.revenueYoY), selected.revenueIncreased)}${Number.isFinite(finiteNumber(selected.revenueQuarterMillions)) ? ` · ${fmtUsdMillions(finiteNumber(selected.revenueQuarterMillions))}` : ""}`;
-      $("usRevenueQoQ").textContent = `${fmtGrowth(finiteNumber(selected.revenueQoQ), selected.revenueQoQIncreased)}${Number.isFinite(finiteNumber(selected.revenuePreviousQuarterMillions)) ? ` · 전분기 ${fmtUsdMillions(finiteNumber(selected.revenuePreviousQuarterMillions))}` : ""}`;
-      $("usNetIncomeYoY").textContent = `${fmtGrowth(finiteNumber(selected.netIncomeYoY), selected.netIncomeIncreased)}${Number.isFinite(finiteNumber(selected.netIncomeQuarterMillions)) ? ` · ${fmtUsdMillions(finiteNumber(selected.netIncomeQuarterMillions))}` : ""}`;
-      $("usNetIncomeQoQ").textContent = `${fmtGrowth(finiteNumber(selected.netIncomeQoQ), selected.netIncomeQoQIncreased)}${Number.isFinite(finiteNumber(selected.netIncomePreviousQuarterMillions)) ? ` · 전분기 ${fmtUsdMillions(finiteNumber(selected.netIncomePreviousQuarterMillions))}` : ""}`;
-      $("usFutureRevenueGrowth").textContent = `${fmtGrowth(finiteNumber(selected.futureRevenueGrowth))} · 5Y 전망`;
-      $("usFutureProfitGrowth").textContent = `${fmtGrowth(finiteNumber(selected.futureProfitGrowth))} · ${escapeHtml(selected.futureProfitGrowthMetric || "EPS Growth Forecast (5Y)")}`;
+      $("usRevenueYoY").innerHTML = `${heatGrowth(finiteNumber(selected.revenueYoY), selected.revenueIncreased)}${Number.isFinite(finiteNumber(selected.revenueQuarterMillions)) ? ` · ${fmtUsdMillions(finiteNumber(selected.revenueQuarterMillions))}` : ""}`;
+      $("usRevenueQoQ").innerHTML = `${heatGrowth(finiteNumber(selected.revenueQoQ), selected.revenueQoQIncreased)}${Number.isFinite(finiteNumber(selected.revenuePreviousQuarterMillions)) ? ` · 전분기 ${fmtUsdMillions(finiteNumber(selected.revenuePreviousQuarterMillions))}` : ""}`;
+      $("usNetIncomeYoY").innerHTML = `${heatGrowth(finiteNumber(selected.netIncomeYoY), selected.netIncomeIncreased)}${Number.isFinite(finiteNumber(selected.netIncomeQuarterMillions)) ? ` · ${fmtUsdMillions(finiteNumber(selected.netIncomeQuarterMillions))}` : ""}`;
+      $("usNetIncomeQoQ").innerHTML = `${heatGrowth(finiteNumber(selected.netIncomeQoQ), selected.netIncomeQoQIncreased)}${Number.isFinite(finiteNumber(selected.netIncomePreviousQuarterMillions)) ? ` · 전분기 ${fmtUsdMillions(finiteNumber(selected.netIncomePreviousQuarterMillions))}` : ""}`;
+      $("usFutureRevenueGrowth").innerHTML = `${heatGrowth(finiteNumber(selected.futureRevenueGrowth))} · 5Y 전망`;
+      $("usFutureProfitGrowth").innerHTML = `${heatGrowth(finiteNumber(selected.futureProfitGrowth))} · ${escapeHtml(selected.futureProfitGrowthMetric || "EPS Growth Forecast (5Y)")}`;
       $("usShortAnalyst").textContent = `${fmtPct(finiteNumber(selected.shortFloat))} short float · ${selected.analystConsensus || "-"}${Number.isFinite(finiteNumber(selected.analystCount)) ? ` (${Math.round(finiteNumber(selected.analystCount)).toLocaleString("ko-KR")})` : ""}`;
       $("usDataStamp").textContent = usQuoteStamp(selected);
       $("usTargetKpi").className = `kpi ${pctKind(valuation.targetUpside)}`;
@@ -2182,9 +2250,6 @@
       $("usRankRows").innerHTML = visible.map((item, index) => {
         const stock = item.stock;
         const valuation = item.valuation;
-        const targetKind = pctKind(valuation.targetUpside);
-        const fairKind = pctKind(valuation.fairUpside);
-        const deltaKind = pctKind(valuation.peerDelta);
         return `<tr data-us-rank-symbol="${escapeHtml(stock.symbol)}">
           <td>${(index + 1).toLocaleString("ko-KR")}</td>
           <td>${escapeHtml(usExchangeGroup(stock))}</td>
@@ -2193,10 +2258,10 @@
           <td>${escapeHtml(stock.name || stock.symbol)}</td>
           <td>${fmtUsd(valuation.price)}</td>
           <td>${fmtUsd(valuation.targetPrice)}</td>
-          <td><span class="pill ${targetKind}">${fmtSignedPct(valuation.targetUpside)}</span></td>
+          <td>${heatSignedPct(valuation.targetUpside)}</td>
           <td>${fmtUsd(valuation.fairPrice)}</td>
-          <td><span class="pill ${fairKind}">${fmtSignedPct(valuation.fairUpside)}</span></td>
-          <td><span class="pill ${deltaKind}">${fmtPctPoint(valuation.peerDelta)}</span></td>
+          <td>${heatSignedPct(valuation.fairUpside)}</td>
+          <td>${heatPctPoint(valuation.peerDelta)}</td>
           <td>${fmtMultiple(finiteNumber(stock.per))}</td>
           <td>${fmtMultiple(finiteNumber(stock.forwardPer))}</td>
           <td>${fmtMultiple(finiteNumber(stock.peg))}</td>
@@ -2206,12 +2271,12 @@
           <td>${fmtPct(finiteNumber(stock.roe))}</td>
           <td>${fmtPct(finiteNumber(stock.roic))}</td>
           <td>${fmtPct(finiteNumber(stock.profitMargin))}</td>
-          <td>${fmtGrowth(finiteNumber(stock.revenueYoY), stock.revenueIncreased)}</td>
-          <td>${fmtGrowth(finiteNumber(stock.revenueQoQ), stock.revenueQoQIncreased)}</td>
-          <td>${fmtGrowth(finiteNumber(stock.netIncomeYoY), stock.netIncomeIncreased)}</td>
-          <td>${fmtGrowth(finiteNumber(stock.netIncomeQoQ), stock.netIncomeQoQIncreased)}</td>
-          <td>${fmtGrowth(finiteNumber(stock.futureRevenueGrowth))}</td>
-          <td>${fmtGrowth(finiteNumber(stock.futureProfitGrowth))}</td>
+          <td>${heatGrowth(finiteNumber(stock.revenueYoY), stock.revenueIncreased)}</td>
+          <td>${heatGrowth(finiteNumber(stock.revenueQoQ), stock.revenueQoQIncreased)}</td>
+          <td>${heatGrowth(finiteNumber(stock.netIncomeYoY), stock.netIncomeIncreased)}</td>
+          <td>${heatGrowth(finiteNumber(stock.netIncomeQoQ), stock.netIncomeQoQIncreased)}</td>
+          <td>${heatGrowth(finiteNumber(stock.futureRevenueGrowth))}</td>
+          <td>${heatGrowth(finiteNumber(stock.futureProfitGrowth))}</td>
           <td>${fmtRatio(finiteNumber(stock.debtEquity), 2)}</td>
           <td>${escapeHtml(stock.analystConsensus || "-")}${Number.isFinite(finiteNumber(stock.analystCount)) ? ` (${Math.round(finiteNumber(stock.analystCount)).toLocaleString("ko-KR")})` : ""}</td>
           <td>${format52w(stock)}</td>
@@ -2248,7 +2313,7 @@
       const signal = signalFor(model, selected);
 
       $("fairPrice").textContent = fmtWon(selected.fairPrice);
-      $("upside").textContent = fmtPct(selected.upside);
+      $("upside").innerHTML = heatPct(selected.upside);
       $("buyPrice").textContent = fmtWon(selected.buyPrice);
       $("signal").textContent = signal.text;
       $("calcMeta").textContent = `${model.companyName || model.code || "종목"} · ${selected.name}`;
@@ -2266,7 +2331,7 @@
           <td>${fmtPct(item.decay, 0)}</td>
           <td>${fmtEok(item.businessValueEok)}</td>
           <td>${fmtWon(item.fairPrice)}</td>
-          <td><span class="pill ${kind}">${fmtPct(item.upside)}</span></td>
+          <td>${heatPct(item.upside)}</td>
           <td>${fmtWon(item.buyPrice)}</td>
           <td>${fmtWon(item.sellPrice)}</td>
         </tr>`;
