@@ -173,6 +173,112 @@
       font-weight: 800;
       text-align: right;
     }
+    .us-toolbar {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 10px;
+      padding: 14px;
+      border-bottom: 1px solid var(--line);
+      background: #fbfcfd;
+    }
+    .us-layout {
+      display: grid;
+      grid-template-columns: minmax(300px, 430px) minmax(0, 1fr);
+      gap: 14px;
+      padding: 14px;
+    }
+    .us-card {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #fff;
+      overflow: hidden;
+      min-width: 0;
+    }
+    .us-card-head {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 12px;
+      border-bottom: 1px solid var(--line);
+      background: #fbfcfd;
+    }
+    .us-card-head h3 {
+      margin: 0;
+      font-size: 0.92rem;
+      font-weight: 950;
+    }
+    .us-card-head span {
+      color: var(--muted);
+      font-size: 0.76rem;
+      font-weight: 800;
+      text-align: right;
+    }
+    .us-kpis {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 10px;
+      padding: 12px;
+      border-bottom: 1px solid var(--line);
+    }
+    .us-kpis .kpi {
+      padding: 10px;
+    }
+    .us-kpis .kpi.wide {
+      grid-column: 1 / -1;
+    }
+    .us-kpis .kpi .value {
+      font-size: 1.08rem;
+    }
+    .us-meta-grid {
+      display: grid;
+      gap: 8px;
+      padding: 12px;
+      color: var(--muted);
+      font-size: 0.8rem;
+      font-weight: 800;
+    }
+    .us-meta-grid div {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      border-bottom: 1px dashed var(--line);
+      padding-bottom: 7px;
+    }
+    .us-meta-grid div:last-child {
+      border-bottom: 0;
+      padding-bottom: 0;
+    }
+    .us-meta-grid strong {
+      color: var(--ink);
+      text-align: right;
+    }
+    .us-table-wrap {
+      overflow: auto;
+      max-height: calc(100vh - 285px);
+    }
+    .us-table {
+      min-width: 1120px;
+    }
+    .us-table tbody tr {
+      cursor: pointer;
+    }
+    .us-table tbody tr:hover td {
+      background: #f0fdf4;
+    }
+    .us-table tr.selected-peer td {
+      background: #ecfdf5;
+      font-weight: 900;
+    }
+    .us-method {
+      margin: 0 14px 14px;
+      padding: 12px 14px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #fff;
+      color: var(--muted);
+      font-size: 0.8rem;
+      font-weight: 800;
+    }
     .panel {
       background: var(--surface);
       border: 1px solid var(--line);
@@ -571,6 +677,7 @@
     .mobile-only { display: none; }
     @media (max-width: 1060px) {
       main { grid-template-columns: 1fr; }
+      .us-layout { grid-template-columns: 1fr; }
       .inputs { max-height: none; }
       .kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); }
     }
@@ -587,8 +694,13 @@
       .actions { width: 100%; justify-content: stretch; }
       .actions .btn { flex: 1 1 0; }
       main { width: calc(100% - 12px); margin-top: 8px; }
+      .rank-view { width: calc(100% - 12px); margin-top: 8px; }
+      .us-toolbar { grid-template-columns: 1fr; }
+      .us-layout { padding: 8px; }
+      .us-method { margin: 0 8px 8px; }
       .field-grid, .rate-row, .analysis-grid { grid-template-columns: 1fr; }
       .kpis { grid-template-columns: 1fr; }
+      .us-kpis { grid-template-columns: 1fr; }
       .panel-head { align-items: flex-start; flex-direction: column; }
       .panel-head .meta { text-align: left; }
       table { min-width: 640px; }
@@ -606,6 +718,7 @@
         <nav class="top-tabs" aria-label="화면 선택">
           <button class="top-tab active" type="button" data-view-tab="calculator">계산기</button>
           <button class="top-tab" type="button" data-view-tab="ranking">저평가 순위</button>
+          <button class="top-tab" type="button" data-view-tab="us">미국 주식</button>
         </nav>
         <div class="actions">
           <button class="btn ghost" type="button" id="loadLatest">최신값</button>
@@ -899,6 +1012,99 @@
         </table>
       </div>
     </section>
+
+    <section class="panel rank-view us-view" id="usView" hidden aria-labelledby="usTitle">
+      <div class="panel-head">
+        <h2 id="usTitle">미국 주식</h2>
+        <div class="meta" id="usDataSummary">미국 데이터 확인 중</div>
+      </div>
+      <div class="us-toolbar" aria-label="미국 종목 선택">
+        <label>섹터
+          <select id="usSectorSelect"></select>
+        </label>
+        <label>업종/테마
+          <select id="usIndustrySelect"></select>
+        </label>
+        <label>종목
+          <select id="usStockSelect"></select>
+        </label>
+      </div>
+      <div class="us-layout">
+        <article class="us-card" aria-labelledby="usSelectedName">
+          <div class="us-card-head">
+            <h3 id="usSelectedName">종목 선택</h3>
+            <span id="usSelectedMeta">-</span>
+          </div>
+          <div class="us-kpis">
+            <div class="kpi">
+              <div class="label">현재가</div>
+              <div class="value" id="usCurrentPrice">-</div>
+            </div>
+            <div class="kpi">
+              <div class="label">1년 목표가</div>
+              <div class="value" id="usTargetPrice">-</div>
+            </div>
+            <div class="kpi" id="usTargetKpi">
+              <div class="label">목표가 대비</div>
+              <div class="value" id="usTargetUpside">-</div>
+            </div>
+            <div class="kpi" id="usFairKpi">
+              <div class="label">적정가 대비</div>
+              <div class="value" id="usFairUpside">-</div>
+            </div>
+            <div class="kpi">
+              <div class="label">추정 적정가</div>
+              <div class="value" id="usFairPrice">-</div>
+            </div>
+            <div class="kpi" id="usVerdictKpi">
+              <div class="label">판정</div>
+              <div class="value" id="usVerdict">-</div>
+            </div>
+            <div class="kpi wide">
+              <div class="label">경쟁사 중간값 대비</div>
+              <div class="value" id="usPeerDelta">-</div>
+            </div>
+          </div>
+          <div class="us-meta-grid">
+            <div><span>52주 위치</span><strong id="us52w">-</strong></div>
+            <div><span>시가총액</span><strong id="usMarketCap">-</strong></div>
+            <div><span>거래량</span><strong id="usVolume">-</strong></div>
+            <div><span>데이터 기준</span><strong id="usDataStamp">-</strong></div>
+          </div>
+        </article>
+
+        <article class="us-card">
+          <div class="us-card-head">
+            <h3>경쟁사 비교</h3>
+            <span id="usPeerSummary">종목 선택 후 표시</span>
+          </div>
+          <div class="us-table-wrap">
+            <table class="us-table">
+              <thead>
+                <tr>
+                  <th>티커</th>
+                  <th>회사명</th>
+                  <th>현재가</th>
+                  <th>1년 목표가</th>
+                  <th>목표가 대비</th>
+                  <th>추정 적정가</th>
+                  <th>적정가 대비</th>
+                  <th>경쟁사 대비</th>
+                  <th>52주 위치</th>
+                  <th>시가총액</th>
+                  <th>거래량</th>
+                  <th>업종/테마</th>
+                </tr>
+              </thead>
+              <tbody id="usPeerRows"></tbody>
+            </table>
+          </div>
+        </article>
+      </div>
+      <div class="us-method">
+        추정 적정가는 애널리스트 1년 목표가와 같은 업종 경쟁사의 목표상승률 중간값을 함께 반영합니다. 목표가가 없으면 경쟁사 중간값 기반 가격으로 계산합니다.
+      </div>
+    </section>
   </div>
 
   <script>
@@ -938,13 +1144,26 @@
       ]
     };
 
+    const DEFAULT_US_DATA = {
+      generatedAt: null,
+      source: "data/us_latest.json",
+      counts: {},
+      targetCount: 0,
+      groupStats: {},
+      stocks: []
+    };
+
     const state = {
       latest: DEFAULT_DATA,
+      usLatest: DEFAULT_US_DATA,
       activeView: "calculator",
       activeMarket: "KOSPI",
       rankMarket: "ALL",
+      usSector: "",
+      usIndustry: "",
       rankings: [],
       selectedStock: null,
+      selectedUsStock: null,
       lastResult: null
     };
 
@@ -1001,6 +1220,53 @@
     function fmtRatio(value, digits = 2) {
       if (!Number.isFinite(value)) return "-";
       return value.toFixed(digits);
+    }
+
+    function fmtUsd(value) {
+      if (!Number.isFinite(value)) return "-";
+      return new Intl.NumberFormat("en-US", {
+        style: "currency",
+        currency: "USD",
+        maximumFractionDigits: value >= 100 ? 0 : 2
+      }).format(value);
+    }
+
+    function fmtUsdCompact(value) {
+      if (!Number.isFinite(value)) return "-";
+      return new Intl.NumberFormat("en-US", {
+        style: "currency",
+        currency: "USD",
+        notation: "compact",
+        maximumFractionDigits: 2
+      }).format(value);
+    }
+
+    function fmtSignedPct(value, digits = 1) {
+      if (!Number.isFinite(value)) return "-";
+      const sign = value > 0 ? "+" : "";
+      return `${sign}${(value * 100).toFixed(digits)}%`;
+    }
+
+    function fmtPctPoint(value, digits = 1) {
+      if (!Number.isFinite(value)) return "-";
+      const sign = value > 0 ? "+" : "";
+      return `${sign}${(value * 100).toFixed(digits)}%p`;
+    }
+
+    function fmtCount(value) {
+      if (!Number.isFinite(value)) return "-";
+      return Math.round(value).toLocaleString("ko-KR");
+    }
+
+    function clamp(value, min, max) {
+      return Math.min(Math.max(value, min), max);
+    }
+
+    function medianNumber(values) {
+      const cleaned = values.filter(Number.isFinite).sort((a, b) => a - b);
+      if (!cleaned.length) return NaN;
+      const middle = Math.floor(cleaned.length / 2);
+      return cleaned.length % 2 ? cleaned[middle] : (cleaned[middle - 1] + cleaned[middle]) / 2;
     }
 
     function getInputModel() {
@@ -1250,6 +1516,224 @@
       }).join("");
     }
 
+    function usStocks() {
+      return state.usLatest?.stocks || [];
+    }
+
+    function sortByMarketCap(stocks) {
+      return [...stocks].sort((a, b) => finiteNumber(b.marketCap) - finiteNumber(a.marketCap));
+    }
+
+    function usSectorList() {
+      const counts = state.usLatest?.counts || {};
+      return [...new Set(usStocks().map((stock) => stock.sector).filter(Boolean))]
+        .sort((a, b) => (counts[b] || 0) - (counts[a] || 0) || a.localeCompare(b));
+    }
+
+    function usIndustryList(sector = state.usSector) {
+      const counts = new Map();
+      usStocks()
+        .filter((stock) => stock.sector === sector && stock.industry)
+        .forEach((stock) => counts.set(stock.industry, (counts.get(stock.industry) || 0) + 1));
+      return [...counts.keys()].sort((a, b) => (counts.get(b) || 0) - (counts.get(a) || 0) || a.localeCompare(b));
+    }
+
+    function usCandidates() {
+      return sortByMarketCap(usStocks().filter((stock) => {
+        if (stock.sector !== state.usSector) return false;
+        if (state.usIndustry && stock.industry !== state.usIndustry) return false;
+        return finiteNumber(stock.price) > 0;
+      }));
+    }
+
+    function groupMedianForUsStock(stock, scope = "industry") {
+      const stats = state.usLatest?.groupStats || {};
+      const key = scope === "industry"
+        ? `industry::${stock.sector || ""}::${stock.industry || ""}`
+        : `sector::${stock.sector || ""}`;
+      return finiteNumber(stats[key]?.medianTargetUpside);
+    }
+
+    function targetUpsideMedian(stocks) {
+      return medianNumber(stocks.map((stock) => finiteNumber(stock.targetUpside)).filter((value) => value > -0.9 && value < 4));
+    }
+
+    function usPeerPool(stock) {
+      const priceReady = (item) => item.symbol !== stock.symbol && item.sector === stock.sector && finiteNumber(item.price) > 0;
+      let peers = usStocks().filter((item) => priceReady(item) && item.industry === stock.industry);
+      if (peers.length < 3) peers = usStocks().filter(priceReady);
+      return sortByMarketCap(peers);
+    }
+
+    function usPeerMedian(stock, peers = usPeerPool(stock)) {
+      const fromPeers = targetUpsideMedian(peers);
+      if (Number.isFinite(fromPeers)) return fromPeers;
+      const fromIndustry = groupMedianForUsStock(stock, "industry");
+      if (Number.isFinite(fromIndustry)) return fromIndustry;
+      const fromSector = groupMedianForUsStock(stock, "sector");
+      if (Number.isFinite(fromSector)) return fromSector;
+      return targetUpsideMedian(usStocks());
+    }
+
+    function computeUsValuation(stock) {
+      const price = finiteNumber(stock.price);
+      const targetPrice = finiteNumber(stock.targetPrice);
+      const peers = usPeerPool(stock);
+      const peerMedian = usPeerMedian(stock, peers);
+      const targetUpside = Number.isFinite(finiteNumber(stock.targetUpside))
+        ? finiteNumber(stock.targetUpside)
+        : (Number.isFinite(targetPrice) && price > 0 ? targetPrice / price - 1 : NaN);
+      const peerFairPrice = price > 0 && Number.isFinite(peerMedian) ? price * (1 + peerMedian) : NaN;
+      let fairPrice = NaN;
+      if (Number.isFinite(targetUpside) && Number.isFinite(targetPrice) && Number.isFinite(peerFairPrice)) {
+        fairPrice = targetPrice * 0.65 + peerFairPrice * 0.35;
+      } else if (Number.isFinite(targetUpside) && Number.isFinite(targetPrice)) {
+        fairPrice = targetPrice;
+      } else if (Number.isFinite(peerFairPrice)) {
+        fairPrice = peerFairPrice;
+      }
+      const fairUpside = price > 0 && Number.isFinite(fairPrice) ? fairPrice / price - 1 : NaN;
+      const peerDelta = Number.isFinite(targetUpside) && Number.isFinite(peerMedian) ? targetUpside - peerMedian : NaN;
+      return { price, targetPrice, targetUpside, peers, peerMedian, peerFairPrice, fairPrice, fairUpside, peerDelta };
+    }
+
+    function usVerdict(value) {
+      if (!Number.isFinite(value)) return { text: "데이터 부족", kind: "warn" };
+      if (value >= 0.25) return { text: "저평가", kind: "good" };
+      if (value >= 0.10) return { text: "소폭 저평가", kind: "good" };
+      if (value <= -0.15) return { text: "고평가", kind: "bad" };
+      if (value <= -0.05) return { text: "소폭 고평가", kind: "bad" };
+      return { text: "중립", kind: "warn" };
+    }
+
+    function pctKind(value) {
+      if (!Number.isFinite(value)) return "warn";
+      if (value >= 0.1) return "good";
+      if (value <= -0.05) return "bad";
+      return "warn";
+    }
+
+    function format52w(stock) {
+      const position = finiteNumber(stock.fiftyTwoWeekPosition);
+      const low = finiteNumber(stock.fiftyTwoWeekLow);
+      const high = finiteNumber(stock.fiftyTwoWeekHigh);
+      if (!Number.isFinite(position)) return "-";
+      const range = Number.isFinite(low) && Number.isFinite(high) ? ` (${fmtUsd(low)}~${fmtUsd(high)})` : "";
+      return `${fmtPct(clamp(position, 0, 1), 0)}${range}`;
+    }
+
+    function populateUsSelectors(preferredSymbol = "") {
+      const sectors = usSectorList();
+      if (!sectors.length) {
+        $("usSectorSelect").innerHTML = `<option value="">데이터 없음</option>`;
+        $("usIndustrySelect").innerHTML = `<option value="">데이터 없음</option>`;
+        $("usStockSelect").innerHTML = `<option value="">데이터 없음</option>`;
+        return null;
+      }
+
+      if (!state.usSector || !sectors.includes(state.usSector)) state.usSector = sectors[0];
+      $("usSectorSelect").innerHTML = sectors.map((sector) => {
+        const count = state.usLatest.counts?.[sector] || usStocks().filter((stock) => stock.sector === sector).length;
+        return `<option value="${escapeHtml(sector)}">${escapeHtml(sector)} (${count.toLocaleString("ko-KR")})</option>`;
+      }).join("");
+      $("usSectorSelect").value = state.usSector;
+
+      const industries = usIndustryList();
+      if (state.usIndustry && !industries.includes(state.usIndustry)) state.usIndustry = "";
+      $("usIndustrySelect").innerHTML = [
+        `<option value="">섹터 전체</option>`,
+        ...industries.map((industry) => `<option value="${escapeHtml(industry)}">${escapeHtml(industry)}</option>`)
+      ].join("");
+      $("usIndustrySelect").value = state.usIndustry;
+
+      const candidates = usCandidates();
+      const selected = candidates.find((stock) => stock.symbol === preferredSymbol)
+        || candidates.find((stock) => stock.symbol === state.selectedUsStock?.symbol)
+        || candidates[0]
+        || null;
+      state.selectedUsStock = selected;
+      $("usStockSelect").innerHTML = candidates.map((stock) => {
+        const label = `${stock.symbol} · ${stock.name || stock.symbol}`;
+        return `<option value="${escapeHtml(stock.symbol)}">${escapeHtml(label)}</option>`;
+      }).join("");
+      if (selected) $("usStockSelect").value = selected.symbol;
+      return selected;
+    }
+
+    function renderUsPeers(stock, valuation) {
+      const selectedRow = { ...stock, __selected: true };
+      const rows = [selectedRow, ...valuation.peers].slice(0, 15);
+      const targetCount = rows.filter((item) => Number.isFinite(finiteNumber(item.targetUpside))).length;
+      const scopeText = valuation.peers.some((item) => item.industry === stock.industry) ? stock.industry : stock.sector;
+      $("usPeerSummary").textContent = `${scopeText || "동종 그룹"} · ${rows.length.toLocaleString("ko-KR")}개 표시 · 목표가 ${targetCount.toLocaleString("ko-KR")}개`;
+
+      $("usPeerRows").innerHTML = rows.map((item) => {
+        const rowValuation = item.symbol === stock.symbol ? valuation : computeUsValuation(item);
+        const selectedClass = item.symbol === stock.symbol ? " class=\"selected-peer\"" : "";
+        const targetKind = pctKind(rowValuation.targetUpside);
+        const fairKind = pctKind(rowValuation.fairUpside);
+        const deltaKind = pctKind(rowValuation.peerDelta);
+        return `<tr${selectedClass} data-us-symbol="${escapeHtml(item.symbol)}">
+          <td><span class="scenario-name">${escapeHtml(item.symbol)}</span></td>
+          <td>${escapeHtml(item.name || item.symbol)}</td>
+          <td>${fmtUsd(rowValuation.price)}</td>
+          <td>${fmtUsd(rowValuation.targetPrice)}</td>
+          <td><span class="pill ${targetKind}">${fmtSignedPct(rowValuation.targetUpside)}</span></td>
+          <td>${fmtUsd(rowValuation.fairPrice)}</td>
+          <td><span class="pill ${fairKind}">${fmtSignedPct(rowValuation.fairUpside)}</span></td>
+          <td><span class="pill ${deltaKind}">${fmtPctPoint(rowValuation.peerDelta)}</span></td>
+          <td>${format52w(item)}</td>
+          <td>${fmtUsdCompact(finiteNumber(item.marketCap))}</td>
+          <td>${fmtCount(finiteNumber(item.volume))}</td>
+          <td title="${escapeHtml(item.industry || "")}">${escapeHtml(item.industry || "")}</td>
+        </tr>`;
+      }).join("");
+    }
+
+    function renderUsEmpty() {
+      $("usDataSummary").textContent = "미국 데이터 없음";
+      $("usSelectedName").textContent = "데이터 없음";
+      $("usSelectedMeta").textContent = "data/us_latest.json 확인";
+      ["usCurrentPrice", "usTargetPrice", "usTargetUpside", "usFairUpside", "usFairPrice", "usVerdict", "usPeerDelta", "us52w", "usMarketCap", "usVolume", "usDataStamp"].forEach((id) => {
+        $(id).textContent = "-";
+      });
+      $("usPeerSummary").textContent = "표시할 종목 없음";
+      $("usPeerRows").innerHTML = `<tr><td colspan="12">미국 종목 데이터를 불러오지 못했습니다.</td></tr>`;
+    }
+
+    function renderUsView(preferredSymbol = "") {
+      const selected = populateUsSelectors(preferredSymbol);
+      if (!selected) {
+        renderUsEmpty();
+        return;
+      }
+      const valuation = computeUsValuation(selected);
+      const verdict = usVerdict(Number.isFinite(valuation.fairUpside) ? valuation.fairUpside : valuation.targetUpside);
+      const sectors = usSectorList().length;
+      const total = usStocks().length;
+      const targetCount = state.usLatest.targetCount || usStocks().filter((stock) => Number.isFinite(finiteNumber(stock.targetPrice))).length;
+
+      $("usDataSummary").textContent = `${total.toLocaleString("ko-KR")}개 · ${sectors.toLocaleString("ko-KR")}개 섹터 · 목표가 ${targetCount.toLocaleString("ko-KR")}개`;
+      $("usSelectedName").textContent = `${selected.symbol} · ${selected.name || selected.symbol}`;
+      $("usSelectedMeta").textContent = `${selected.sector || "-"} · ${selected.industry || "-"}`;
+      $("usCurrentPrice").textContent = fmtUsd(valuation.price);
+      $("usTargetPrice").textContent = fmtUsd(valuation.targetPrice);
+      $("usTargetUpside").textContent = fmtSignedPct(valuation.targetUpside);
+      $("usFairPrice").textContent = fmtUsd(valuation.fairPrice);
+      $("usFairUpside").textContent = fmtSignedPct(valuation.fairUpside);
+      $("usPeerDelta").textContent = `${fmtPctPoint(valuation.peerDelta)} / 경쟁사 중간 ${fmtSignedPct(valuation.peerMedian)}`;
+      $("usVerdict").textContent = verdict.text;
+      $("us52w").textContent = format52w(selected);
+      $("usMarketCap").textContent = fmtUsdCompact(finiteNumber(selected.marketCap));
+      $("usVolume").textContent = fmtCount(finiteNumber(selected.volume));
+      $("usDataStamp").textContent = formatDataDate(state.usLatest.generatedAt);
+      $("usTargetKpi").className = `kpi ${pctKind(valuation.targetUpside)}`;
+      $("usFairKpi").className = `kpi ${pctKind(valuation.fairUpside)}`;
+      $("usVerdictKpi").className = `kpi ${verdict.kind}`;
+      if (state.activeView === "us") $("dataStatus").textContent = `미국 기준 ${formatDataDate(state.usLatest.generatedAt)}`;
+      renderUsPeers(selected, valuation);
+    }
+
     function calculate() {
       const model = getInputModel();
       const scenarios = [
@@ -1479,6 +1963,17 @@
       }
     }
 
+    async function loadUsData() {
+      try {
+        const response = await fetch("data/us_latest.json", { cache: "no-store" });
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        state.usLatest = await response.json();
+      } catch (error) {
+        state.usLatest = DEFAULT_US_DATA;
+      }
+      if (state.activeView === "us") renderUsView();
+    }
+
     function formatDataDate(value) {
       if (!value) return "수동";
       const date = new Date(value);
@@ -1518,7 +2013,19 @@
 
     function resetCase() {
       localStorage.removeItem("srim-case");
-      Object.assign(state, { latest: DEFAULT_DATA, activeView: "calculator", activeMarket: "KOSPI", rankMarket: "ALL", rankings: [], selectedStock: null, lastResult: null });
+      Object.assign(state, {
+        latest: DEFAULT_DATA,
+        usLatest: DEFAULT_US_DATA,
+        activeView: "calculator",
+        activeMarket: "KOSPI",
+        rankMarket: "ALL",
+        usSector: "",
+        usIndustry: "",
+        rankings: [],
+        selectedStock: null,
+        selectedUsStock: null,
+        lastResult: null
+      });
       location.reload();
     }
 
@@ -1526,10 +2033,13 @@
       state.activeView = view;
       $("calculatorView").hidden = view !== "calculator";
       $("rankView").hidden = view !== "ranking";
+      $("usView").hidden = view !== "us";
       document.querySelectorAll("[data-view-tab]").forEach((tab) => {
         tab.classList.toggle("active", tab.dataset.viewTab === view);
       });
       if (view === "ranking") renderRankings();
+      if (view === "us") renderUsView();
+      if (view !== "us") $("dataStatus").textContent = `기준값 ${formatDataDate(state.latest.generatedAt)}`;
     }
 
     function openRankedStock(code) {
@@ -1563,8 +2073,26 @@
         const target = event.target.closest("[data-peer-code]");
         if (target) openRankedStock(target.dataset.peerCode);
       });
-      $("calculateNow").addEventListener("click", calculate);
+      $("usPeerRows").addEventListener("click", (event) => {
+        const target = event.target.closest("[data-us-symbol]");
+        if (!target) return;
+        const stock = usStocks().find((item) => item.symbol === target.dataset.usSymbol);
+        if (!stock) return;
+        state.usSector = stock.sector || state.usSector;
+        state.usIndustry = stock.industry || state.usIndustry;
+        state.selectedUsStock = stock;
+        renderUsView(stock.symbol);
+        window.scrollTo({ top: 0, behavior: "smooth" });
+      });
+      $("calculateNow").addEventListener("click", () => {
+        if (state.activeView === "us") renderUsView();
+        else calculate();
+      });
       $("loadLatest").addEventListener("click", () => {
+        if (state.activeView === "us") {
+          loadUsData();
+          return;
+        }
         applyMarketDefaults();
         const stock = (state.latest.stocks || []).find((item) => item.code === $("stockPicker").value) || stocksForMarket()[0] || state.latest.stocks?.[0];
         applyStock(stock);
@@ -1581,6 +2109,25 @@
       document.querySelectorAll(".market-tab").forEach((tab) => {
         tab.addEventListener("click", () => setActiveMarket(tab.dataset.market));
       });
+      $("usSectorSelect").addEventListener("change", (event) => {
+        state.usSector = event.target.value;
+        state.usIndustry = "";
+        state.selectedUsStock = null;
+        renderUsView();
+      });
+      $("usIndustrySelect").addEventListener("change", (event) => {
+        state.usIndustry = event.target.value;
+        state.selectedUsStock = null;
+        renderUsView();
+      });
+      $("usStockSelect").addEventListener("change", (event) => {
+        const stock = usStocks().find((item) => item.symbol === event.target.value);
+        if (!stock) return;
+        state.selectedUsStock = stock;
+        state.usSector = stock.sector || state.usSector;
+        state.usIndustry = state.usIndustry || stock.industry || "";
+        renderUsView(stock.symbol);
+      });
       document.querySelectorAll(".tab").forEach((tab) => {
         tab.addEventListener("click", () => {
           document.querySelectorAll(".tab").forEach((item) => item.classList.toggle("active", item === tab));
@@ -1594,7 +2141,7 @@
     }
 
     attachEvents();
-    loadLatestData().then(() => {
+    Promise.all([loadLatestData(), loadUsData()]).then(() => {
       if (!loadSavedCase()) calculate();
     });
   </script>

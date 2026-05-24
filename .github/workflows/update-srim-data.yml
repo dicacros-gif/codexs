@@ -23,13 +23,15 @@ jobs:
           python-version: "3.11"
 
       - name: Refresh latest market data
-        run: python scripts/update_market_data.py
+        run: |
+          python scripts/update_market_data.py
+          python scripts/update_us_market_data.py
 
       - name: Commit changes
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add data/latest.json
+          git add data/latest.json data/us_latest.json
           git diff --cached --quiet || git commit -m "Update S-RIM latest data"
           git push
 
