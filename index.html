@@ -1662,7 +1662,7 @@
         <div class="meta" id="usDataSummary">미국 데이터 확인 중</div>
       </div>
       <div class="us-toolbar" aria-label="미국 종목 선택">
-        <label>섹터
+        <label>세부 섹터
           <select id="usSectorSelect"></select>
         </label>
         <label>상세 테마
@@ -1895,6 +1895,7 @@
       generatedAt: null,
       source: "data/us_latest.json",
       counts: {},
+      detailedSectorCounts: {},
       exchangeCounts: {},
       themeCounts: {},
       targetCount: 0,
@@ -2404,23 +2405,274 @@
     }
 
     function usSectorList() {
-      const counts = state.usLatest?.counts || {};
-      return [...new Set(usStocks().map((stock) => stock.sector).filter(Boolean))]
-        .sort((a, b) => (counts[b] || 0) - (counts[a] || 0) || a.localeCompare(b));
+      const counts = usDetailSectorCountsMap();
+      return [...counts.keys()].sort((a, b) => (counts.get(b) || 0) - (counts.get(a) || 0) || a.localeCompare(b));
+    }
+
+    const US_BROAD_THEMES = new Set([
+      "Consumer Discretionary", "Consumer Staples", "Finance", "Health Care", "Industrials",
+      "Technology", "Utilities", "Telecommunications", "Basic Materials", "Miscellaneous",
+      "소비재", "산업재", "금융", "에너지", "AI", "SW", "전력", "바이오/제약",
+      "클라우드", "데이터센터", "전기차/배터리"
+    ]);
+
+    const US_DETAIL_THEME_RULES = [
+      ["AI 반도체", ["NVDA", "AMD", "AVGO", "MRVL", "ARM"], ["accelerated computing", "gpu", "ai accelerator", "data center chip"]],
+      ["AI SW", ["PLTR", "AI", "SNOW", "DDOG", "MDB", "CRM", "NOW", "MSFT", "ORCL", "ADBE", "PATH"], ["ai software", "analytics", "data platform", "machine learning"]],
+      ["AI 인프라", ["SMCI", "DELL", "VRT", "ANET", "NTAP"], ["ai infrastructure", "server", "storage", "networking products", "data center"]],
+      ["SW/SaaS", ["MSFT", "ORCL", "CRM", "ADBE", "NOW", "INTU", "ADSK", "TEAM", "WDAY"], ["prepackaged software", "saas", "application software", "computer software"]],
+      ["클라우드/데이터", ["AMZN", "GOOGL", "MSFT", "ORCL", "SNOW", "NET", "DDOG", "MDB"], ["cloud", "data platform", "internet services", "edp services"]],
+      ["사이버보안", ["PANW", "CRWD", "ZS", "FTNT", "OKTA", "NET", "CHKP", "S"], ["security", "cyber", "identity", "firewall"]],
+      ["로봇/자동화", ["ISRG", "ROK", "TER", "SYM", "ZBRA", "HON", "EMR"], ["robot", "automation", "laboratory analytical instruments"]],
+      ["반도체", ["NVDA", "AMD", "AVGO", "QCOM", "MU", "MRVL", "INTC", "TXN", "ADI", "ON"], ["semiconductors", "integrated circuit"]],
+      ["반도체 장비", ["AMAT", "LRCX", "KLAC", "ASML", "TER"], ["semiconductor equipment", "wafer", "test systems"]],
+      ["광통신", ["CIEN", "LITE", "COHR", "GLW", "AAOI", "COMM", "FN", "NOK"], ["optical", "photonics", "fiber", "fibre", "laser", "telecommunications equipment"]],
+      ["전자부품", ["APH", "TEL", "GLW", "JBL", "FLEX"], ["electronic components", "electrical products"]],
+      ["전력망/전기장비", ["ETN", "GEV", "PWR", "VRT", "HUBB", "GNRC"], ["electrical", "grid", "power generation", "electrical products"]],
+      ["전력 유틸", ["VST", "CEG", "NRG", "SO", "DUK", "AEP", "EXC"], ["electric utilities", "central"]],
+      ["원전/우라늄", ["CEG", "CCJ", "SMR", "NNE", "LEU", "BWXT"], ["nuclear", "uranium"]],
+      ["재생에너지/저장", ["BE", "FLNC", "ENPH", "SEDG", "FSLR"], ["renewable", "solar", "energy storage", "fuel cell"]],
+      ["천연가스/LNG", ["LNG", "KMI", "WMB", "OKE", "TRGP"], ["natural gas", "lng", "gas distribution"]],
+      ["석유가스 E&P", ["XOM", "CVX", "COP", "EOG", "OXY", "DVN"], ["oil & gas production", "integrated oil"]],
+      ["유전서비스", ["SLB", "HAL", "BKR"], ["oilfield", "oil & gas field services"]],
+      ["바이오텍", ["REGN", "VRTX", "MRNA", "BIIB", "GILD"], ["biotechnology", "biological products"]],
+      ["제약", ["LLY", "JNJ", "MRK", "ABBV", "PFE", "AMGN", "BMY"], ["pharmaceutical", "drug", "preparations"]],
+      ["의료기기", ["ISRG", "SYK", "MDT", "BSX", "EW", "ZBH"], ["medical/dental instruments", "medical specialties", "laboratory analytical instruments"]],
+      ["헬스케어 서비스", ["UNH", "HUM", "CI", "CVS", "HCA"], ["hospital", "health care", "managed care"]],
+      ["대형은행", ["JPM", "BAC", "WFC", "C", "USB", "PNC"], ["major banks", "commercial banks"]],
+      ["투자은행/브로커", ["GS", "MS", "SCHW", "IBKR"], ["investment bankers", "brokers"]],
+      ["자산운용", ["BLK", "BX", "KKR", "APO", "TROW"], ["investment managers", "asset management"]],
+      ["보험", ["BRK.B", "PGR", "AIG", "MET", "PRU", "ALL"], ["insurance", "insurers"]],
+      ["핀테크/결제", ["V", "MA", "AXP", "PYPL", "SQ", "COIN"], ["payment", "transaction", "finance: consumer services"]],
+      ["리츠", ["PLD", "AMT", "EQIX", "DLR", "O", "SPG", "CCI"], ["real estate investment trusts", "reit"]],
+      ["산업기계", ["CAT", "DE", "ROK", "EMR", "PH", "ITW"], ["industrial machinery", "machinery/components"]],
+      ["방산/항공", ["RTX", "BA", "LMT", "NOC", "GD", "HWM"], ["aerospace", "military", "defense"]],
+      ["철도/물류", ["UNP", "CSX", "NSC", "FDX", "UPS"], ["railroads", "transportation", "trucking"]],
+      ["건설/엔지니어링", ["PWR", "FLR", "J", "ACM", "VMC"], ["construction", "engineering", "building materials"]],
+      ["상업서비스", ["ADP", "PAYX", "CTAS", "CPRT", "RSG", "WM"], ["business services", "commercial services", "waste"]],
+      ["자동차/EV", ["TSLA", "RIVN", "LCID", "F", "GM"], ["auto manufacturing", "motor vehicles", "electric vehicle"]],
+      ["배터리/리튬", ["ALB", "QS", "ENVX", "LAC"], ["battery", "lithium"]],
+      ["이커머스/리테일", ["AMZN", "WMT", "COST", "TGT", "EBAY"], ["catalog/specialty distribution", "department/specialty retail stores", "retail"]],
+      ["홈/건자재", ["HD", "LOW", "TSCO"], ["building materials", "home improvement"]],
+      ["레스토랑/호텔", ["MCD", "SBUX", "CMG", "YUM", "MAR", "HLT"], ["restaurants", "hotels/resorts"]],
+      ["여행/레저", ["BKNG", "ABNB", "RCL", "CCL", "DIS"], ["amusement", "recreation", "travel"]],
+      ["의류/스포츠", ["NKE", "LULU", "TPR", "RL"], ["apparel", "shoe", "sporting"]],
+      ["식음료", ["KO", "PEP", "MDLZ", "KHC", "GIS", "KDP"], ["packaged foods", "beverages", "food"]],
+      ["생활소비재", ["PG", "CL", "KMB", "EL", "CHD"], ["consumer specialties", "household", "personal care"]],
+      ["농업/화학", ["CF", "MOS", "DD", "DOW", "LIN"], ["chemicals", "agricultural", "fertilizers"]],
+      ["금속/광산", ["FCX", "NEM", "SCCO", "AA", "CLF"], ["metal", "mining", "steel"]],
+      ["통신서비스", ["VZ", "T", "TMUS", "CMCSA"], ["telecommunications", "broadcasting"]]
+    ];
+    const US_DETAIL_THEME_NAMES = new Set(US_DETAIL_THEME_RULES.map(([theme]) => theme));
+
+    const US_SECTOR_LABELS = new Map([
+      ["Basic Materials", "소재"],
+      ["Consumer Discretionary", "소비재"],
+      ["Consumer Staples", "필수소비재"],
+      ["Energy", "에너지/전력"],
+      ["Finance", "금융"],
+      ["Health Care", "헬스케어"],
+      ["Industrials", "산업재"],
+      ["Miscellaneous", "기타"],
+      ["Real Estate", "부동산"],
+      ["Technology", "테크"],
+      ["Telecommunications", "커뮤니케이션"],
+      ["Utilities", "에너지/전력"]
+    ]);
+
+    const US_INDUSTRY_LABEL_RULES = [
+      ["Advertising", "광고/마케팅"],
+      ["Air Freight/Delivery Services", "항공화물/배송"],
+      ["Auto & Home Supply Stores", "자동차/홈용품"],
+      ["Auto Parts", "자동차부품"],
+      ["Automotive Aftermarket", "자동차 애프터마켓"],
+      ["Accident &Health Insurance", "건강보험"],
+      ["Agricultural Chemicals", "농업/화학"],
+      ["Aluminum", "알루미늄"],
+      ["Banks", "은행"],
+      ["Broadcasting", "방송/미디어"],
+      ["Building Products", "건축자재"],
+      ["Building Materials", "건축자재"],
+      ["Catalog/Specialty Distribution", "이커머스/전문유통"],
+      ["Clothing/Shoe/Accessory Stores", "의류/잡화 리테일"],
+      ["Computer Manufacturing", "컴퓨터 하드웨어"],
+      ["Computer peripheral equipment", "주변기기"],
+      ["Construction/Ag Equipment/Trucks", "건설/농기계"],
+      ["Consumer Electronics", "소비자전자"],
+      ["Containers/Packaging", "포장재"],
+      ["Department/Specialty Retail Stores", "전문리테일"],
+      ["Diversified Financial Services", "종합금융"],
+      ["Durable Goods", "내구소비재"],
+      ["Electronics Distribution", "전자유통"],
+      ["Engineering & Construction", "건설/엔지니어링"],
+      ["Environmental Services", "환경서비스"],
+      ["Farming/Seeds/Milling", "농업/종자"],
+      ["Finance/Investors Services", "투자서비스"],
+      ["Fluid Controls", "유체제어"],
+      ["Food Chains", "식품리테일"],
+      ["Food Distributors", "식품유통"],
+      ["Garments and Clothing", "의류/스포츠"],
+      ["Home Furnishings", "가구/인테리어"],
+      ["Homebuilding", "주택건설"],
+      ["Integrated oil Companies", "통합 석유가스"],
+      ["Integrated Freight & Logistics", "통합물류"],
+      ["Industrial Specialties", "산업특수재"],
+      ["Marine Transportation", "해운/물류"],
+      ["Metal Fabrications", "금속가공"],
+      ["Meat/Poultry/Fish", "식품"],
+      ["Mining & Quarrying of Nonmetallic Minerals", "비금속광물"],
+      ["Misc Corporate Leasing Services", "기업리스"],
+      ["Multi-Sector Companies", "복합기업"],
+      ["Newspapers/Magazines", "출판/미디어"],
+      ["Office Equipment/Supplies/Services", "사무장비/서비스"],
+      ["Ordnance And Accessories", "방산부품"],
+      ["Other Consumer Services", "기타 소비자서비스"],
+      ["Other Specialty Stores", "전문상점"],
+      ["Package Goods/Cosmetics", "화장품/생활용품"],
+      ["Paints/Coatings", "페인트/코팅"],
+      ["Paper", "종이/펄프"],
+      ["Plastic Products", "플라스틱"],
+      ["Pollution Control Equipment", "환경장비"],
+      ["Precious Metals", "귀금속"],
+      ["Professional Services", "전문서비스"],
+      ["Radio And Television Broadcasting And Communications Equipment", "통신장비"],
+      ["Publishing", "출판/미디어"],
+      ["Real Estate", "부동산 개발/서비스"],
+      ["Recreational Games/Products/Toys", "완구/레저용품"],
+      ["Rental/Leasing Companies", "렌탈/리스"],
+      ["Retail-Auto Dealers and Gas Stations", "자동차딜러/주유"],
+      ["Retail-Drug Stores", "드럭스토어"],
+      ["Services-Misc. Amusement & Recreation", "레저/엔터"],
+      ["Shoe Manufacturing", "신발"],
+      ["Specialty Foods", "특수식품"],
+      ["Specialty Chemicals", "특수화학"],
+      ["Telecommunications Equipment", "통신장비"],
+      ["Tools/Hardware", "공구/하드웨어"],
+      ["Trucking Freight/Courier Services", "트럭/택배물류"],
+      ["Water, Sewer, Pipeline, Comm & Power Line Construction", "인프라 건설"],
+      ["Transportation Services", "운송서비스"]
+    ];
+
+    function fallbackUsDetailSector(sector, industry) {
+      const sectorLabel = US_SECTOR_LABELS.get(sector) || sector || "기타";
+      const lowerIndustry = String(industry || "").toLowerCase();
+      const industryLabel = US_INDUSTRY_LABEL_RULES.find(([needle]) => lowerIndustry.includes(needle.toLowerCase()))?.[1] || "기타 세부업종";
+      return `${sectorLabel} > ${industryLabel}`;
+    }
+
+    function fallbackUsThemeTag(stock) {
+      const lowerIndustry = String(stock?.industry || stock?.theme || "").toLowerCase();
+      const industryLabel = US_INDUSTRY_LABEL_RULES.find(([needle]) => lowerIndustry.includes(needle.toLowerCase()))?.[1];
+      if (industryLabel) return industryLabel;
+      const raw = String(stock?.theme || "").trim();
+      if (raw && !US_BROAD_THEMES.has(raw) && /[가-힣]/.test(raw)) return raw;
+      const sectorLabel = US_SECTOR_LABELS.get(String(stock?.sector || "")) || "기타";
+      return `${sectorLabel} 기타`;
+    }
+
+    function normalizeLegacyUsTheme(theme, stock) {
+      const value = String(theme || "").trim();
+      if (!value || US_BROAD_THEMES.has(value)) return "";
+      if (US_DETAIL_THEME_NAMES.has(value) || /[가-힣]/.test(value)) return value;
+      return fallbackUsThemeTag(stock);
+    }
+
+    function detectUsThemeTags(stock) {
+      const symbol = String(stock?.symbol || "").toUpperCase();
+      const haystack = ` ${[stock?.name, stock?.sector, stock?.industry].filter(Boolean).join(" ").toLowerCase()} `;
+      const tags = [];
+      US_DETAIL_THEME_RULES.forEach(([theme, symbols, keywords]) => {
+        if (symbols.includes(symbol) || keywords.some((keyword) => haystack.includes(keyword))) tags.push(theme);
+      });
+      if (Array.isArray(stock?.themeTags)) {
+        stock.themeTags.filter(Boolean).forEach((theme) => {
+          const normalized = normalizeLegacyUsTheme(theme, stock);
+          if (normalized && !tags.includes(normalized)) tags.push(normalized);
+        });
+      }
+      const fallback = !tags.length ? fallbackUsThemeTag(stock) : "";
+      if (fallback) tags.push(fallback);
+      if (!tags.length) tags.push("기타");
+      return [...new Set(tags)];
     }
 
     function usThemeTags(stock) {
-      if (Array.isArray(stock.themeTags) && stock.themeTags.length) return stock.themeTags.filter(Boolean);
-      return [stock.theme || stock.sector || "기타"].filter(Boolean);
+      return detectUsThemeTags(stock);
+    }
+
+    function usDetailSector(stock) {
+      const explicit = stock?.detailedSector || stock?.detailSector;
+      if (explicit) return explicit;
+      const tags = usThemeTags(stock);
+      const has = (...names) => names.some((name) => tags.includes(name));
+      const sector = String(stock?.sector || "");
+      const industry = String(stock?.industry || "");
+      const text = `${sector} ${industry}`.toLowerCase();
+
+      if (has("AI 반도체")) return "테크 > AI 반도체";
+      if (has("AI SW", "AI 인프라")) return "테크 > AI/데이터 인프라";
+      if (has("반도체", "반도체 장비")) return "테크 > 반도체/장비";
+      if (has("SW/SaaS", "클라우드/데이터")) return "테크 > SW/클라우드";
+      if (has("사이버보안")) return "테크 > 사이버보안";
+      if (has("광통신", "전자부품")) return "테크 > 네트워크/부품";
+      if (has("전력망/전기장비", "로봇/자동화")) return "산업재 > 전력/자동화";
+      if (has("전력 유틸")) return "에너지/전력 > 전력 유틸";
+      if (has("원전/우라늄", "재생에너지/저장")) return "에너지/전력 > 원전/재생";
+      if (has("천연가스/LNG", "석유가스 E&P", "유전서비스")) return "에너지/전력 > 석유가스/LNG";
+      if (has("바이오텍", "제약")) return "헬스케어 > 바이오/제약";
+      if (has("의료기기")) return "헬스케어 > 의료기기";
+      if (has("헬스케어 서비스")) return "헬스케어 > 서비스/보험";
+      if (has("대형은행")) return "금융 > 은행";
+      if (has("투자은행/브로커", "자산운용")) return "금융 > 증권/운용";
+      if (has("보험")) return "금융 > 보험";
+      if (has("핀테크/결제")) return "금융 > 핀테크/결제";
+      if (has("리츠")) return "부동산 > 리츠/인프라";
+      if (has("산업기계")) return "산업재 > 기계/장비";
+      if (has("방산/항공")) return "산업재 > 방산/항공";
+      if (has("철도/물류")) return "산업재 > 물류/철도";
+      if (has("건설/엔지니어링")) return "산업재 > 건설/엔지니어링";
+      if (has("상업서비스")) return "산업재 > 상업서비스";
+      if (has("자동차/EV", "배터리/리튬")) return "소비재 > 자동차/EV";
+      if (has("이커머스/리테일", "홈/건자재")) return "소비재 > 리테일/홈";
+      if (has("레스토랑/호텔", "여행/레저")) return "소비재 > 호텔/레저/외식";
+      if (has("의류/스포츠")) return "소비재 > 의류/스포츠";
+      if (has("식음료", "생활소비재")) return "필수소비재 > 식음료/생활";
+      if (has("농업/화학")) return "소재 > 화학/농업";
+      if (has("금속/광산")) return "소재 > 금속/광산";
+      if (has("통신서비스")) return "커뮤니케이션 > 통신/미디어";
+
+      if (text.includes("software") || text.includes("edp services")) return "테크 > SW/클라우드";
+      if (text.includes("semiconductor")) return "테크 > 반도체/장비";
+      if (text.includes("bank")) return "금융 > 은행";
+      if (text.includes("insurance")) return "금융 > 보험";
+      if (text.includes("biotechnology") || text.includes("pharmaceutical")) return "헬스케어 > 바이오/제약";
+      if (text.includes("electric utilities")) return "에너지/전력 > 전력 유틸";
+      if (text.includes("oil") || text.includes("natural gas")) return "에너지/전력 > 석유가스/LNG";
+      if (text.includes("retail")) return "소비재 > 리테일/홈";
+      if (text.includes("restaurants") || text.includes("hotels")) return "소비재 > 호텔/레저/외식";
+      return fallbackUsDetailSector(sector, industry);
+    }
+
+    function usDetailSectorCountsMap() {
+      const map = new Map();
+      usStocks().forEach((stock) => {
+        const sector = usDetailSector(stock);
+        if (sector) map.set(sector, (map.get(sector) || 0) + 1);
+      });
+      return map;
+    }
+
+    function usThemeCountsMap() {
+      const map = new Map();
+      usStocks().forEach((stock) => {
+        usThemeTags(stock).forEach((theme) => map.set(theme, (map.get(theme) || 0) + 1));
+      });
+      return map;
     }
 
     function usThemeList() {
-      const counts = state.usLatest?.themeCounts || {};
-      const map = new Map();
-      usStocks().forEach((stock) => {
-        usThemeTags(stock).forEach((theme) => map.set(theme, counts[theme] || ((map.get(theme) || 0) + 1)));
-      });
-      return [...map.keys()].sort((a, b) => (counts[b] || map.get(b) || 0) - (counts[a] || map.get(a) || 0) || a.localeCompare(b));
+      const counts = usThemeCountsMap();
+      return [...counts.keys()].sort((a, b) => (counts.get(b) || 0) - (counts.get(a) || 0) || a.localeCompare(b));
     }
 
     function usExchangeGroup(stock) {
@@ -2441,14 +2693,14 @@
     function usIndustryList(sector = state.usSector) {
       const counts = new Map();
       usStocks()
-        .filter((stock) => (!sector || stock.sector === sector) && (!state.usTheme || usThemeTags(stock).includes(state.usTheme)) && stock.industry)
+        .filter((stock) => (!sector || usDetailSector(stock) === sector) && (!state.usTheme || usThemeTags(stock).includes(state.usTheme)) && stock.industry)
         .forEach((stock) => counts.set(stock.industry, (counts.get(stock.industry) || 0) + 1));
       return [...counts.keys()].sort((a, b) => (counts.get(b) || 0) - (counts.get(a) || 0) || a.localeCompare(b));
     }
 
     function usCandidates() {
       return sortByMarketCap(usStocks().filter((stock) => {
-        if (state.usSector && stock.sector !== state.usSector) return false;
+        if (state.usSector && usDetailSector(stock) !== state.usSector) return false;
         if (state.usTheme && !usThemeTags(stock).includes(state.usTheme)) return false;
         if (state.usIndustry && stock.industry !== state.usIndustry) return false;
         return finiteNumber(stock.price) > 0;
@@ -2548,21 +2800,23 @@
       }
 
       if (state.usSector && !sectors.includes(state.usSector)) state.usSector = "";
+      const sectorCounts = usDetailSectorCountsMap();
       $("usSectorSelect").innerHTML = [
-        `<option value="">전체 섹터</option>`,
+        `<option value="">전체 세부 섹터</option>`,
         ...sectors.map((sector) => {
-        const count = state.usLatest.counts?.[sector] || usStocks().filter((stock) => stock.sector === sector).length;
+        const count = sectorCounts.get(sector) || 0;
         return `<option value="${escapeHtml(sector)}">${escapeHtml(sector)} (${count.toLocaleString("ko-KR")})</option>`;
         })
       ].join("");
       $("usSectorSelect").value = state.usSector;
 
       const themes = usThemeList();
+      const themeCounts = usThemeCountsMap();
       if (state.usTheme && !themes.includes(state.usTheme)) state.usTheme = "";
       $("usThemeSelect").innerHTML = [
         `<option value="">전체 상세 테마</option>`,
         ...themes.map((theme) => {
-          const count = state.usLatest.themeCounts?.[theme] || usStocks().filter((stock) => usThemeTags(stock).includes(theme)).length;
+          const count = themeCounts.get(theme) || 0;
           return `<option value="${escapeHtml(theme)}">${escapeHtml(theme)} (${count.toLocaleString("ko-KR")})</option>`;
         })
       ].join("");
@@ -2662,7 +2916,7 @@
       const total = usStocks().length;
       const targetCount = state.usLatest.targetCount || usStocks().filter((stock) => Number.isFinite(finiteNumber(stock.targetPrice))).length;
 
-      $("usDataSummary").textContent = `${total.toLocaleString("ko-KR")}개 · ${sectors.toLocaleString("ko-KR")}개 섹터 · 목표가 ${targetCount.toLocaleString("ko-KR")}개`;
+      $("usDataSummary").textContent = `${total.toLocaleString("ko-KR")}개 · ${sectors.toLocaleString("ko-KR")}개 세부 섹터 · 목표가 ${targetCount.toLocaleString("ko-KR")}개`;
       $("usSelectedName").textContent = `${selected.symbol} · ${selected.name || selected.symbol}`;
       $("usSelectedMeta").textContent = `${usExchangeGroup(selected)} · ${usThemeTags(selected).slice(0, 2).join(", ") || "-"} · ${selected.industry || "-"} · ${usQuoteStamp(selected)}`;
       $("usCurrentPrice").textContent = fmtUsd(valuation.price);
@@ -2759,11 +3013,12 @@
       $("usExchangeTabs").innerHTML = buttons.map((item) => `<button type="button" data-us-exchange="${escapeHtml(item.key)}" class="${item.key === state.usRankExchange ? "active" : ""}">${escapeHtml(item.label)} <small>${item.count.toLocaleString("ko-KR")}</small></button>`).join("");
 
       const themes = usThemeList();
+      const themeCounts = usThemeCountsMap();
       if (state.usRankTheme && !themes.includes(state.usRankTheme)) state.usRankTheme = "";
       $("usRankThemeSelect").innerHTML = [
         `<option value="">전체 상세 테마</option>`,
         ...themes.map((theme) => {
-          const count = state.usLatest.themeCounts?.[theme] || usStocks().filter((stock) => usThemeTags(stock).includes(theme)).length;
+          const count = themeCounts.get(theme) || 0;
           return `<option value="${escapeHtml(theme)}">${escapeHtml(theme)} (${count.toLocaleString("ko-KR")})</option>`;
         })
       ].join("");
@@ -3147,14 +3402,14 @@
     function renderUsTerminalChips() {
       const usList = usStocks();
       const usExchangeCounts = state.usLatest?.exchangeCounts || {};
-      const usThemeCounts = state.usLatest?.themeCounts || {};
+      const usThemeCounts = usThemeCountsMap();
       const usFundamentals = usList.filter((stock) => stock.hasFundamentals === true).length;
       const usFailures = (state.usLatest?.failures || []).length;
-      const topThemes = Object.entries(usThemeCounts).sort((a, b) => b[1] - a[1]).slice(0, 4);
+      const topThemes = [...usThemeCounts.entries()].sort((a, b) => b[1] - a[1]).slice(0, 5);
       const topThemeNames = new Set(topThemes.map(([theme]) => theme));
-      const featuredThemes = ["AI", "AI SW", "SW", "전력", "광통신"]
-        .filter((theme) => usThemeCounts[theme] && !topThemeNames.has(theme))
-        .map((theme) => [theme, usThemeCounts[theme]]);
+      const featuredThemes = ["AI 반도체", "AI SW", "AI 인프라", "SW/SaaS", "전력망/전기장비", "광통신", "반도체"]
+        .filter((theme) => usThemeCounts.get(theme) && !topThemeNames.has(theme))
+        .map((theme) => [theme, usThemeCounts.get(theme)]);
       return [
         terminalChip("US UNIVERSE", usList.length.toLocaleString("ko-KR"), "info", "view:us"),
         terminalChip("US TARGET", (state.usLatest?.targetCount || 0).toLocaleString("ko-KR"), "up", "view:usRanking"),
@@ -3309,7 +3564,7 @@
     function openUsRankedStock(symbol) {
       const stock = usStocks().find((item) => item.symbol === symbol);
       if (!stock) return;
-      state.usSector = stock.sector || "";
+      state.usSector = usDetailSector(stock) || "";
       state.usTheme = usThemeTags(stock)[0] || "";
       state.usIndustry = stock.industry || "";
       state.selectedUsStock = stock;
@@ -3376,7 +3631,7 @@
         if (!target) return;
         const stock = usStocks().find((item) => item.symbol === target.dataset.usSymbol);
         if (!stock) return;
-        state.usSector = stock.sector || state.usSector;
+        state.usSector = usDetailSector(stock) || state.usSector;
         state.usTheme = usThemeTags(stock)[0] || state.usTheme;
         state.usIndustry = stock.industry || state.usIndustry;
         state.selectedUsStock = stock;
@@ -3434,7 +3689,7 @@
         const stock = usStocks().find((item) => item.symbol === event.target.value);
         if (!stock) return;
         state.selectedUsStock = stock;
-        state.usSector = stock.sector || state.usSector;
+        state.usSector = usDetailSector(stock) || state.usSector;
         state.usTheme = state.usTheme || usThemeTags(stock)[0] || "";
         state.usIndustry = state.usIndustry || stock.industry || "";
         renderUsView(stock.symbol);

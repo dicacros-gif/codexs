@@ -61,24 +61,139 @@ EXCLUDED_NAME_PATTERNS = (
 )
 
 THEME_RULES: tuple[tuple[str, tuple[str, ...], tuple[str, ...]], ...] = (
-    ("AI", ("NVDA", "AMD", "AVGO", "MRVL", "MU", "SMCI", "DELL", "ARM"), ("artificial intelligence", " ai ", "accelerated computing", "gpu", "semiconductor", "chip", "data center")),
-    ("AI SW", ("PLTR", "AI", "SNOW", "DDOG", "MDB", "CRM", "NOW", "MSFT", "ORCL", "ADBE", "PATH"), ("ai software", "analytics", "data platform", "application software", "infrastructure software", "machine learning")),
-    ("SW", ("MSFT", "ORCL", "CRM", "ADBE", "NOW", "INTU", "ADSK", "TEAM", "WDAY"), ("software", "computer software", "prepackaged software", "saas", "cloud software")),
-    ("전력", ("VST", "CEG", "ETN", "GEV", "PWR", "VRT", "NRG", "BE", "FLNC", "GNRC"), ("electric utilities", "power", "electrical", "grid", "energy storage", "renewable", "generator")),
-    ("광통신", ("CIEN", "LITE", "COHR", "GLW", "AAOI", "COMM", "FN", "NOK"), ("optical", "photonics", "fiber", "fibre", "laser", "communications equipment", "networking products")),
-    ("반도체", ("NVDA", "AMD", "AVGO", "QCOM", "MU", "MRVL", "INTC", "TXN", "ADI", "AMAT", "LRCX", "KLAC", "ASML", "ON"), ("semiconductor", "semi", "chip", "integrated circuit")),
-    ("데이터센터", ("VRT", "EQIX", "DLR", "IRM", "AMT", "DELL", "SMCI", "ANET", "NTAP"), ("data center", "datacenter", "server", "storage", "networking products", "reit")),
-    ("클라우드", ("MSFT", "AMZN", "GOOGL", "ORCL", "SNOW", "NET", "DDOG", "MDB", "CRM"), ("cloud", "internet services", "data platform", "infrastructure software")),
+    ("AI 반도체", ("NVDA", "AMD", "AVGO", "MRVL", "ARM"), ("accelerated computing", "gpu", "ai accelerator", "data center chip")),
+    ("AI SW", ("PLTR", "AI", "SNOW", "DDOG", "MDB", "CRM", "NOW", "MSFT", "ORCL", "ADBE", "PATH"), ("ai software", "analytics", "data platform", "machine learning")),
+    ("AI 인프라", ("SMCI", "DELL", "VRT", "ANET", "NTAP"), ("ai infrastructure", "server", "storage", "networking products", "data center")),
+    ("SW/SaaS", ("MSFT", "ORCL", "CRM", "ADBE", "NOW", "INTU", "ADSK", "TEAM", "WDAY"), ("prepackaged software", "saas", "application software")),
+    ("클라우드/데이터", ("AMZN", "GOOGL", "MSFT", "ORCL", "SNOW", "NET", "DDOG", "MDB"), ("cloud", "data platform", "internet services")),
     ("사이버보안", ("PANW", "CRWD", "ZS", "FTNT", "OKTA", "NET", "CHKP", "S"), ("security", "cyber", "identity", "firewall")),
-    ("로봇/자동화", ("ISRG", "ROK", "TER", "SYM", "ZBRA", "HON", "EMR"), ("robot", "automation", "industrial machinery", "laboratory analytical instruments")),
-    ("전기차/배터리", ("TSLA", "RIVN", "LCID", "ALB", "F", "GM", "QS", "ENVX"), ("electric vehicle", "battery", "lithium", "auto manufacturing", "motor vehicles")),
+    ("로봇/자동화", ("ISRG", "ROK", "TER", "SYM", "ZBRA", "HON", "EMR"), ("robot", "automation", "laboratory analytical instruments")),
+    ("반도체", ("NVDA", "AMD", "AVGO", "QCOM", "MU", "MRVL", "INTC", "TXN", "ADI", "ON"), ("semiconductors", "integrated circuit")),
+    ("반도체 장비", ("AMAT", "LRCX", "KLAC", "ASML", "TER"), ("semiconductor equipment", "wafer", "test systems")),
+    ("광통신", ("CIEN", "LITE", "COHR", "GLW", "AAOI", "COMM", "FN", "NOK"), ("optical", "photonics", "fiber", "fibre", "laser", "telecommunications equipment")),
+    ("전자부품", ("APH", "TEL", "GLW", "JBL", "FLEX"), ("electronic components", "electrical products")),
+    ("전력망/전기장비", ("ETN", "GEV", "PWR", "VRT", "HUBB", "GNRC"), ("electrical", "grid", "power generation", "electrical products")),
+    ("전력 유틸", ("VST", "CEG", "NRG", "SO", "DUK", "AEP", "EXC"), ("electric utilities", "central")),
     ("원전/우라늄", ("CEG", "CCJ", "SMR", "NNE", "LEU", "BWXT"), ("nuclear", "uranium")),
-    ("바이오/제약", ("LLY", "JNJ", "MRK", "ABBV", "PFE", "AMGN", "GILD", "REGN"), ("biotechnology", "pharmaceutical", "medical", "drug")),
-    ("금융", ("JPM", "BAC", "WFC", "C", "GS", "MS", "V", "MA", "AXP"), ("banks", "investment bankers", "finance", "insurance", "payment")),
-    ("에너지", ("XOM", "CVX", "COP", "SLB", "EOG", "OXY", "LNG"), ("oil", "gas", "coal", "energy")),
+    ("재생에너지/저장", ("BE", "FLNC", "ENPH", "SEDG", "FSLR"), ("renewable", "solar", "energy storage", "fuel cell")),
+    ("천연가스/LNG", ("LNG", "KMI", "WMB", "OKE", "TRGP"), ("natural gas", "lng", "gas distribution")),
+    ("석유가스 E&P", ("XOM", "CVX", "COP", "EOG", "OXY", "DVN"), ("oil & gas production", "integrated oil")),
+    ("유전서비스", ("SLB", "HAL", "BKR"), ("oilfield", "oil & gas field services")),
+    ("바이오텍", ("REGN", "VRTX", "MRNA", "BIIB", "GILD"), ("biotechnology", "biological products")),
+    ("제약", ("LLY", "JNJ", "MRK", "ABBV", "PFE", "AMGN", "BMY"), ("pharmaceutical", "drug", "preparations")),
+    ("의료기기", ("ISRG", "SYK", "MDT", "BSX", "EW", "ZBH"), ("medical/dental instruments", "medical specialties", "laboratory analytical instruments")),
+    ("헬스케어 서비스", ("UNH", "HUM", "CI", "CVS", "HCA"), ("hospital", "health care", "managed care")),
+    ("대형은행", ("JPM", "BAC", "WFC", "C", "USB", "PNC"), ("major banks", "commercial banks")),
+    ("투자은행/브로커", ("GS", "MS", "SCHW", "IBKR"), ("investment bankers", "brokers")),
+    ("자산운용", ("BLK", "BX", "KKR", "APO", "TROW"), ("investment managers", "asset management")),
+    ("보험", ("BRK.B", "PGR", "AIG", "MET", "PRU", "ALL"), ("insurance", "insurers")),
+    ("핀테크/결제", ("V", "MA", "AXP", "PYPL", "SQ", "COIN"), ("payment", "transaction", "finance: consumer services")),
     ("리츠", ("PLD", "AMT", "EQIX", "DLR", "O", "SPG", "CCI"), ("real estate investment trusts", "reit")),
-    ("소비재", ("AMZN", "WMT", "COST", "HD", "MCD", "SBUX", "NKE", "TGT"), ("retail", "consumer", "restaurants", "apparel")),
-    ("산업재", ("CAT", "DE", "GE", "HON", "UNP", "RTX", "BA", "LMT"), ("industrial", "machinery", "aerospace", "railroads", "construction")),
+    ("산업기계", ("CAT", "DE", "ROK", "EMR", "PH", "ITW"), ("industrial machinery", "machinery/components")),
+    ("방산/항공", ("RTX", "BA", "LMT", "NOC", "GD", "HWM"), ("aerospace", "military", "defense")),
+    ("철도/물류", ("UNP", "CSX", "NSC", "FDX", "UPS"), ("railroads", "transportation", "trucking")),
+    ("건설/엔지니어링", ("PWR", "FLR", "J", "ACM", "VMC"), ("construction", "engineering", "building materials")),
+    ("상업서비스", ("ADP", "PAYX", "CTAS", "CPRT", "RSG", "WM"), ("business services", "commercial services", "waste")),
+    ("자동차/EV", ("TSLA", "RIVN", "LCID", "F", "GM"), ("auto manufacturing", "motor vehicles", "electric vehicle")),
+    ("배터리/리튬", ("ALB", "QS", "ENVX", "LAC"), ("battery", "lithium")),
+    ("이커머스/리테일", ("AMZN", "WMT", "COST", "TGT", "EBAY"), ("catalog/specialty distribution", "department/specialty retail stores", "retail")),
+    ("홈/건자재", ("HD", "LOW", "TSCO"), ("building materials", "home improvement")),
+    ("레스토랑/호텔", ("MCD", "SBUX", "CMG", "YUM", "MAR", "HLT"), ("restaurants", "hotels/resorts")),
+    ("여행/레저", ("BKNG", "ABNB", "RCL", "CCL", "DIS"), ("amusement", "recreation", "travel")),
+    ("의류/스포츠", ("NKE", "LULU", "TPR", "RL"), ("apparel", "shoe", "sporting")),
+    ("식음료", ("KO", "PEP", "MDLZ", "KHC", "GIS", "KDP"), ("packaged foods", "beverages", "food")),
+    ("생활소비재", ("PG", "CL", "KMB", "EL", "CHD"), ("consumer specialties", "household", "personal care")),
+    ("농업/화학", ("CF", "MOS", "DD", "DOW", "LIN"), ("chemicals", "agricultural", "fertilizers")),
+    ("금속/광산", ("FCX", "NEM", "SCCO", "AA", "CLF"), ("metal", "mining", "steel")),
+    ("통신서비스", ("VZ", "T", "TMUS", "CMCSA"), ("telecommunications", "broadcasting")),
+)
+
+SECTOR_LABELS = {
+    "Basic Materials": "소재",
+    "Consumer Discretionary": "소비재",
+    "Consumer Staples": "필수소비재",
+    "Energy": "에너지/전력",
+    "Finance": "금융",
+    "Health Care": "헬스케어",
+    "Industrials": "산업재",
+    "Miscellaneous": "기타",
+    "Real Estate": "부동산",
+    "Technology": "테크",
+    "Telecommunications": "커뮤니케이션",
+    "Utilities": "에너지/전력",
+}
+
+INDUSTRY_LABEL_RULES: tuple[tuple[str, str], ...] = (
+    ("Advertising", "광고/마케팅"),
+    ("Air Freight/Delivery Services", "항공화물/배송"),
+    ("Auto & Home Supply Stores", "자동차/홈용품"),
+    ("Auto Parts", "자동차부품"),
+    ("Automotive Aftermarket", "자동차 애프터마켓"),
+    ("Accident &Health Insurance", "건강보험"),
+    ("Agricultural Chemicals", "농업/화학"),
+    ("Aluminum", "알루미늄"),
+    ("Banks", "은행"),
+    ("Broadcasting", "방송/미디어"),
+    ("Building Products", "건축자재"),
+    ("Building Materials", "건축자재"),
+    ("Catalog/Specialty Distribution", "이커머스/전문유통"),
+    ("Clothing/Shoe/Accessory Stores", "의류/잡화 리테일"),
+    ("Computer Manufacturing", "컴퓨터 하드웨어"),
+    ("Computer peripheral equipment", "주변기기"),
+    ("Construction/Ag Equipment/Trucks", "건설/농기계"),
+    ("Consumer Electronics", "소비자전자"),
+    ("Containers/Packaging", "포장재"),
+    ("Department/Specialty Retail Stores", "전문리테일"),
+    ("Diversified Financial Services", "종합금융"),
+    ("Durable Goods", "내구소비재"),
+    ("Electronics Distribution", "전자유통"),
+    ("Engineering & Construction", "건설/엔지니어링"),
+    ("Environmental Services", "환경서비스"),
+    ("Farming/Seeds/Milling", "농업/종자"),
+    ("Finance/Investors Services", "투자서비스"),
+    ("Fluid Controls", "유체제어"),
+    ("Food Chains", "식품리테일"),
+    ("Food Distributors", "식품유통"),
+    ("Garments and Clothing", "의류/스포츠"),
+    ("Home Furnishings", "가구/인테리어"),
+    ("Homebuilding", "주택건설"),
+    ("Integrated oil Companies", "통합 석유가스"),
+    ("Integrated Freight & Logistics", "통합물류"),
+    ("Industrial Specialties", "산업특수재"),
+    ("Marine Transportation", "해운/물류"),
+    ("Metal Fabrications", "금속가공"),
+    ("Meat/Poultry/Fish", "식품"),
+    ("Mining & Quarrying of Nonmetallic Minerals", "비금속광물"),
+    ("Misc Corporate Leasing Services", "기업리스"),
+    ("Multi-Sector Companies", "복합기업"),
+    ("Newspapers/Magazines", "출판/미디어"),
+    ("Office Equipment/Supplies/Services", "사무장비/서비스"),
+    ("Ordnance And Accessories", "방산부품"),
+    ("Other Consumer Services", "기타 소비자서비스"),
+    ("Other Specialty Stores", "전문상점"),
+    ("Package Goods/Cosmetics", "화장품/생활용품"),
+    ("Paints/Coatings", "페인트/코팅"),
+    ("Paper", "종이/펄프"),
+    ("Plastic Products", "플라스틱"),
+    ("Pollution Control Equipment", "환경장비"),
+    ("Precious Metals", "귀금속"),
+    ("Professional Services", "전문서비스"),
+    ("Radio And Television Broadcasting And Communications Equipment", "통신장비"),
+    ("Publishing", "출판/미디어"),
+    ("Real Estate", "부동산 개발/서비스"),
+    ("Recreational Games/Products/Toys", "완구/레저용품"),
+    ("Rental/Leasing Companies", "렌탈/리스"),
+    ("Retail-Auto Dealers and Gas Stations", "자동차딜러/주유"),
+    ("Retail-Drug Stores", "드럭스토어"),
+    ("Services-Misc. Amusement & Recreation", "레저/엔터"),
+    ("Shoe Manufacturing", "신발"),
+    ("Specialty Foods", "특수식품"),
+    ("Specialty Chemicals", "특수화학"),
+    ("Telecommunications Equipment", "통신장비"),
+    ("Tools/Hardware", "공구/하드웨어"),
+    ("Trucking Freight/Courier Services", "트럭/택배물류"),
+    ("Water, Sewer, Pipeline, Comm & Power Line Construction", "인프라 건설"),
+    ("Transportation Services", "운송서비스"),
 )
 
 
@@ -451,9 +566,162 @@ def detect_theme_tags(stock: dict) -> list[str]:
         if symbol in symbols or any(keyword in padded for keyword in keywords):
             tags.append(theme)
     if not tags:
-        sector = strip_html(stock.get("sector")) or "기타"
-        tags.append(sector)
+        industry = strip_html(stock.get("industry"))
+        sector = strip_html(stock.get("sector"))
+        fallback_rules = (
+            ("Real Estate Investment Trusts", "리츠"),
+            ("Major Banks", "대형은행"),
+            ("Investment Bankers", "투자은행/브로커"),
+            ("Investment Managers", "자산운용"),
+            ("Insurers", "보험"),
+            ("Finance: Consumer Services", "핀테크/결제"),
+            ("Industrial Machinery", "산업기계"),
+            ("Electrical Products", "전력망/전기장비"),
+            ("Metal Fabrications", "금속가공"),
+            ("Aerospace", "방산/항공"),
+            ("Military", "방산/항공"),
+            ("Marine Transportation", "해운/물류"),
+            ("Business Services", "상업서비스"),
+            ("Biotechnology", "바이오텍"),
+            ("Pharmaceutical", "제약"),
+            ("Medical/Dental Instruments", "의료기기"),
+            ("Medical Specialities", "의료기기"),
+            ("Semiconductors", "반도체"),
+            ("Computer Software", "SW/SaaS"),
+            ("EDP Services", "IT서비스/데이터"),
+            ("Telecommunications Equipment", "광통신"),
+            ("Electronic Components", "전자부품"),
+            ("Electric Utilities", "전력 유틸"),
+            ("Power Generation", "전력망/전기장비"),
+            ("Natural Gas", "천연가스/LNG"),
+            ("Oil & Gas Production", "석유가스 E&P"),
+            ("Oilfield", "유전서비스"),
+            ("Retail", "이커머스/리테일"),
+            ("RETAIL", "이커머스/리테일"),
+            ("Restaurants", "레스토랑/호텔"),
+            ("Hotels/Resorts", "레스토랑/호텔"),
+            ("Amusement", "여행/레저"),
+            ("Apparel", "의류/스포츠"),
+            ("Packaged Foods", "식음료"),
+            ("Beverages", "식음료"),
+            ("Chemicals", "농업/화학"),
+            ("Steel", "금속/광산"),
+        )
+        tags.append(next((theme for needle, theme in fallback_rules if needle.lower() in industry.lower()), fallback_theme_tag(sector, industry)))
     return tags
+
+
+def fallback_theme_tag(sector: str, industry: str) -> str:
+    lower_industry = industry.lower()
+    industry_label = next(
+        (label for needle, label in INDUSTRY_LABEL_RULES if needle.lower() in lower_industry),
+        "",
+    )
+    if industry_label:
+        return industry_label
+    return f"{SECTOR_LABELS.get(sector, '기타')} 기타"
+
+
+def fallback_detail_sector(sector: str, industry: str) -> str:
+    sector_label = SECTOR_LABELS.get(sector, sector or "기타")
+    lower_industry = industry.lower()
+    industry_label = next(
+        (label for needle, label in INDUSTRY_LABEL_RULES if needle.lower() in lower_industry),
+        "기타 세부업종",
+    )
+    return f"{sector_label} > {industry_label}"
+
+
+def detect_detail_sector(stock: dict) -> str:
+    tags = stock.get("themeTags") or detect_theme_tags(stock)
+    sector = strip_html(stock.get("sector"))
+    industry = strip_html(stock.get("industry"))
+    text = f"{sector} {industry}".lower()
+
+    def has(*names: str) -> bool:
+        return any(name in tags for name in names)
+
+    if has("AI 반도체"):
+        return "테크 > AI 반도체"
+    if has("AI SW", "AI 인프라"):
+        return "테크 > AI/데이터 인프라"
+    if has("반도체", "반도체 장비"):
+        return "테크 > 반도체/장비"
+    if has("SW/SaaS", "클라우드/데이터"):
+        return "테크 > SW/클라우드"
+    if has("사이버보안"):
+        return "테크 > 사이버보안"
+    if has("광통신", "전자부품"):
+        return "테크 > 네트워크/부품"
+    if has("전력망/전기장비", "로봇/자동화"):
+        return "산업재 > 전력/자동화"
+    if has("전력 유틸"):
+        return "에너지/전력 > 전력 유틸"
+    if has("원전/우라늄", "재생에너지/저장"):
+        return "에너지/전력 > 원전/재생"
+    if has("천연가스/LNG", "석유가스 E&P", "유전서비스"):
+        return "에너지/전력 > 석유가스/LNG"
+    if has("바이오텍", "제약"):
+        return "헬스케어 > 바이오/제약"
+    if has("의료기기"):
+        return "헬스케어 > 의료기기"
+    if has("헬스케어 서비스"):
+        return "헬스케어 > 서비스/보험"
+    if has("대형은행"):
+        return "금융 > 은행"
+    if has("투자은행/브로커", "자산운용"):
+        return "금융 > 증권/운용"
+    if has("보험"):
+        return "금융 > 보험"
+    if has("핀테크/결제"):
+        return "금융 > 핀테크/결제"
+    if has("리츠"):
+        return "부동산 > 리츠/인프라"
+    if has("산업기계"):
+        return "산업재 > 기계/장비"
+    if has("방산/항공"):
+        return "산업재 > 방산/항공"
+    if has("철도/물류"):
+        return "산업재 > 물류/철도"
+    if has("건설/엔지니어링"):
+        return "산업재 > 건설/엔지니어링"
+    if has("상업서비스"):
+        return "산업재 > 상업서비스"
+    if has("자동차/EV", "배터리/리튬"):
+        return "소비재 > 자동차/EV"
+    if has("이커머스/리테일", "홈/건자재"):
+        return "소비재 > 리테일/홈"
+    if has("레스토랑/호텔", "여행/레저"):
+        return "소비재 > 호텔/레저/외식"
+    if has("의류/스포츠"):
+        return "소비재 > 의류/스포츠"
+    if has("식음료", "생활소비재"):
+        return "필수소비재 > 식음료/생활"
+    if has("농업/화학"):
+        return "소재 > 화학/농업"
+    if has("금속/광산"):
+        return "소재 > 금속/광산"
+    if has("통신서비스"):
+        return "커뮤니케이션 > 통신/미디어"
+    if "software" in text or "edp services" in text:
+        return "테크 > SW/클라우드"
+    if "semiconductor" in text:
+        return "테크 > 반도체/장비"
+    if "bank" in text:
+        return "금융 > 은행"
+    if "insurance" in text:
+        return "금융 > 보험"
+    if "biotechnology" in text or "pharmaceutical" in text:
+        return "헬스케어 > 바이오/제약"
+    if "electric utilities" in text:
+        return "에너지/전력 > 전력 유틸"
+    if "oil" in text or "natural gas" in text:
+        return "에너지/전력 > 석유가스/LNG"
+    if "retail" in text:
+        return "소비재 > 리테일/홈"
+    if "restaurants" in text or "hotels" in text:
+        return "소비재 > 호텔/레저/외식"
+    return fallback_detail_sector(sector, industry)
 
 
 def quote_price(info: dict | None, fallback: float | None) -> float | None:
@@ -598,6 +866,7 @@ def main() -> int:
         merged["exchangeGroup"] = normalize_exchange(merged.get("exchange"))
         merged["themeTags"] = detect_theme_tags(merged)
         merged["theme"] = merged["themeTags"][0] if merged["themeTags"] else "기타"
+        merged["detailedSector"] = detect_detail_sector(merged)
         stocks.append(merged)
     if not stocks:
         stocks = previous.get("stocks", [])
@@ -606,8 +875,11 @@ def main() -> int:
     counts: dict[str, int] = {}
     exchange_counts: dict[str, int] = {}
     theme_counts: dict[str, int] = {}
+    detailed_sector_counts: dict[str, int] = {}
     for stock in stocks:
         counts[stock["sector"]] = counts.get(stock["sector"], 0) + 1
+        detailed_sector = stock.get("detailedSector") or detect_detail_sector(stock)
+        detailed_sector_counts[detailed_sector] = detailed_sector_counts.get(detailed_sector, 0) + 1
         exchange = stock.get("exchangeGroup") or "기타"
         exchange_counts[exchange] = exchange_counts.get(exchange, 0) + 1
         for theme in stock.get("themeTags") or [stock.get("theme") or "기타"]:
@@ -628,6 +900,7 @@ def main() -> int:
             "excluded": "funds, ETFs, warrants, units, preferred shares, notes, SPAC-like acquisition companies",
         },
         "counts": counts,
+        "detailedSectorCounts": detailed_sector_counts,
         "exchangeCounts": exchange_counts,
         "themeCounts": theme_counts,
         "targetCount": target_count,
