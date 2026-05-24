@@ -52,13 +52,18 @@
     .topbar {
       width: min(1440px, calc(100% - 24px));
       margin: 0 auto;
-      min-height: 60px;
-      display: flex;
+      min-height: 78px;
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      grid-template-areas:
+        "brand actions"
+        "tabs tabs";
       align-items: center;
-      justify-content: space-between;
-      gap: 16px;
+      gap: 8px 16px;
+      padding: 8px 0;
     }
     .brand {
+      grid-area: brand;
       display: flex;
       align-items: baseline;
       gap: 10px;
@@ -79,7 +84,9 @@
       text-overflow: ellipsis;
     }
     .top-tabs {
-      display: flex;
+      grid-area: tabs;
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
       align-items: center;
       gap: 6px;
       flex: 1 1 auto;
@@ -95,6 +102,8 @@
       font-size: 0.86rem;
       font-weight: 950;
       white-space: nowrap;
+      text-align: center;
+      width: 100%;
     }
     .top-tab.active {
       border-color: var(--green);
@@ -107,6 +116,8 @@
       gap: 8px;
       flex-wrap: wrap;
       justify-content: flex-end;
+      justify-self: end;
+      grid-area: actions;
     }
     .theme-toggle {
       display: flex;
@@ -170,7 +181,7 @@
     }
     .rank-toolbar {
       position: sticky;
-      top: 61px;
+      top: 96px;
       z-index: 12;
       display: flex;
       align-items: center;
@@ -265,7 +276,7 @@
       align-self: end;
     }
     .us-rank-table {
-      min-width: 2120px;
+      min-width: 2260px;
     }
     .us-layout {
       display: grid;
@@ -605,6 +616,9 @@
     .rank-table {
       min-width: 1080px;
     }
+    .kr-rank-table {
+      min-width: 1760px;
+    }
     .rank-table tbody tr {
       cursor: pointer;
     }
@@ -642,6 +656,7 @@
       font-weight: 950;
       white-space: nowrap;
       line-height: 1.2;
+      box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.08);
     }
     .heat-positive {
       color: #064e3b;
@@ -1190,13 +1205,13 @@
     @media (max-width: 720px) {
       html { font-size: 14px; }
       .topbar {
+        display: flex;
         min-height: auto;
         padding: 10px 0;
         align-items: flex-start;
         flex-direction: column;
       }
-      .top-tabs { width: 100%; }
-      .top-tab { flex: 1 1 0; }
+      .top-tabs { width: 100%; grid-template-columns: repeat(2, minmax(0, 1fr)); }
       .actions { width: 100%; justify-content: stretch; }
       .theme-toggle { flex: 1 1 100%; }
       .theme-toggle button { flex: 1 1 0; }
@@ -1451,6 +1466,7 @@
                     <th>순이익 QoQ</th>
                     <th>다음 매출 YoY</th>
                     <th>다음 이익 YoY</th>
+                    <th>다음 EPS</th>
                     <th>거래량</th>
                   </tr>
                 </thead>
@@ -1539,7 +1555,7 @@
             <span id="rankKospiSummary">계산 준비 중</span>
           </div>
           <div class="rank-table-wrap">
-            <table class="rank-table">
+            <table class="rank-table kr-rank-table">
               <thead>
                 <tr>
                   <th>순위</th>
@@ -1553,6 +1569,13 @@
                   <th>ROE</th>
                   <th>PER</th>
                   <th>시가총액</th>
+                  <th>매출 YoY</th>
+                  <th>매출 QoQ</th>
+                  <th>순이익 YoY</th>
+                  <th>순이익 QoQ</th>
+                  <th>미래 매출</th>
+                  <th>미래 이익</th>
+                  <th>미래 EPS</th>
                   <th>업종</th>
                   <th>보기</th>
                 </tr>
@@ -1568,7 +1591,7 @@
             <span id="rankKosdaqSummary">계산 준비 중</span>
           </div>
           <div class="rank-table-wrap">
-            <table class="rank-table">
+            <table class="rank-table kr-rank-table">
               <thead>
                 <tr>
                   <th>순위</th>
@@ -1582,6 +1605,13 @@
                   <th>ROE</th>
                   <th>PER</th>
                   <th>시가총액</th>
+                  <th>매출 YoY</th>
+                  <th>매출 QoQ</th>
+                  <th>순이익 YoY</th>
+                  <th>순이익 QoQ</th>
+                  <th>미래 매출</th>
+                  <th>미래 이익</th>
+                  <th>미래 EPS</th>
                   <th>업종</th>
                   <th>보기</th>
                 </tr>
@@ -1665,7 +1695,8 @@
             <div><span>순이익 YoY</span><strong id="usNetIncomeYoY">-</strong></div>
             <div><span>순이익 QoQ</span><strong id="usNetIncomeQoQ">-</strong></div>
             <div><span>미래 매출 성장</span><strong id="usFutureRevenueGrowth">-</strong></div>
-            <div><span>미래 이익/EPS 성장</span><strong id="usFutureProfitGrowth">-</strong></div>
+            <div><span>미래 이익 성장</span><strong id="usFutureProfitGrowth">-</strong></div>
+            <div><span>미래 EPS 성장</span><strong id="usFutureEpsGrowth">-</strong></div>
             <div><span>공매도/애널리스트</span><strong id="usShortAnalyst">-</strong></div>
             <div><span>베타/RSI</span><strong id="usBetaRsi">-</strong></div>
             <div><span>52주 변화/이평</span><strong id="usMomentum">-</strong></div>
@@ -1706,7 +1737,8 @@
                   <th>순이익 YoY</th>
                   <th>순이익 QoQ</th>
                   <th>미래 매출</th>
-                  <th>미래 이익/EPS</th>
+                  <th>미래 이익</th>
+                  <th>미래 EPS</th>
                   <th>52주 위치</th>
                   <th>시가총액</th>
                   <th>거래량</th>
@@ -1771,7 +1803,8 @@
               <th>순이익 YoY</th>
               <th>순이익 QoQ</th>
               <th>미래 매출</th>
-              <th>미래 이익/EPS</th>
+              <th>미래 이익</th>
+              <th>미래 EPS</th>
               <th>부채/자본</th>
               <th>애널리스트</th>
               <th>52주 위치</th>
@@ -1959,12 +1992,14 @@
     function heatStyle(value, cap = 1) {
       if (!Number.isFinite(value)) return "";
       const magnitude = clamp(Math.abs(value) / cap, 0, 1);
-      const alpha = 0.1 + magnitude * 0.48;
-      const borderAlpha = 0.22 + magnitude * 0.58;
+      const alpha = 0.06 + magnitude * 0.72;
+      const borderAlpha = 0.18 + magnitude * 0.78;
       if (value >= 0) {
-        return `--heat-bg: rgba(22, 163, 74, ${alpha.toFixed(3)}); --heat-border: rgba(21, 128, 61, ${borderAlpha.toFixed(3)}); --heat-fg: #064e3b;`;
+        const fg = magnitude > 0.62 ? "#052e16" : magnitude > 0.25 ? "#064e3b" : "#166534";
+        return `--heat-bg: rgba(22, 163, 74, ${alpha.toFixed(3)}); --heat-border: rgba(21, 128, 61, ${borderAlpha.toFixed(3)}); --heat-fg: ${fg};`;
       }
-      return `--heat-bg: rgba(220, 38, 38, ${alpha.toFixed(3)}); --heat-border: rgba(185, 28, 28, ${borderAlpha.toFixed(3)}); --heat-fg: #7f1d1d;`;
+      const fg = magnitude > 0.62 ? "#450a0a" : magnitude > 0.25 ? "#7f1d1d" : "#991b1b";
+      return `--heat-bg: rgba(220, 38, 38, ${alpha.toFixed(3)}); --heat-border: rgba(185, 28, 28, ${borderAlpha.toFixed(3)}); --heat-fg: ${fg};`;
     }
 
     function heatSpan(value, text, cap = 1) {
@@ -1991,6 +2026,26 @@
     function heatGrowth(value, increased = null, cap = 1) {
       if (!Number.isFinite(value)) return "-";
       return heatSpan(value, fmtGrowth(value, increased), cap);
+    }
+
+    function firstFiniteMetric(...values) {
+      for (const value of values) {
+        const number = finiteNumber(value);
+        if (Number.isFinite(number)) return number;
+      }
+      return NaN;
+    }
+
+    function futureRevenueGrowthFor(stock) {
+      return firstFiniteMetric(stock?.forecastRevenueYoY, stock?.futureRevenueGrowth, stock?.revenueGrowthForecast5Y);
+    }
+
+    function futureProfitGrowthFor(stock) {
+      return firstFiniteMetric(stock?.forecastNetIncomeYoY, stock?.futureProfitGrowth, stock?.netIncomeGrowthForecast5Y);
+    }
+
+    function futureEpsGrowthFor(stock) {
+      return firstFiniteMetric(stock?.futureEpsGrowth, stock?.forwardEpsGrowth, stock?.epsGrowthForecast5Y, stock?.futureProfitGrowth);
     }
 
     function fmtCount(value) {
@@ -2199,7 +2254,7 @@
 
       if (!peers.length) {
         $("peerSummary").textContent = industry ? `${industry} · 비교 가능한 수치 없음` : "업종 정보 없음";
-        $("peerRows").innerHTML = `<tr><td colspan="17"><div class="peer-empty">동일 업종에서 비교 가능한 PER/ROE/시세 데이터가 없습니다.</div></td></tr>`;
+        $("peerRows").innerHTML = `<tr><td colspan="18"><div class="peer-empty">동일 업종에서 비교 가능한 PER/ROE/시세 데이터가 없습니다.</div></td></tr>`;
         return;
       }
 
@@ -2222,8 +2277,9 @@
           <td>${heatGrowth(finiteNumber(stock.revenueQoQ), stock.revenueQoQIncreased)}</td>
           <td>${heatGrowth(finiteNumber(stock.netIncomeYoY), stock.netIncomeIncreased)}</td>
           <td>${heatGrowth(finiteNumber(stock.netIncomeQoQ), stock.netIncomeQoQIncreased)}</td>
-          <td>${heatGrowth(finiteNumber(stock.forecastRevenueYoY), stock.forecastRevenueIncreased)}</td>
-          <td>${heatGrowth(finiteNumber(stock.forecastNetIncomeYoY), stock.forecastNetIncomeIncreased)}</td>
+          <td>${heatGrowth(futureRevenueGrowthFor(stock), stock.forecastRevenueIncreased)}</td>
+          <td>${heatGrowth(futureProfitGrowthFor(stock), stock.forecastNetIncomeIncreased)}</td>
+          <td>${heatGrowth(futureEpsGrowthFor(stock))}</td>
           <td>${Number.isFinite(finiteNumber(stock.volume)) ? Math.round(finiteNumber(stock.volume)).toLocaleString("ko-KR") : "-"}</td>
         </tr>`;
       }).join("");
@@ -2272,7 +2328,7 @@
       $("rankKosdaqSummary").textContent = `${rowsByMarket.KOSDAQ.length.toLocaleString("ko-KR")}개 계산 가능 중 상위 ${kosdaqRows.length.toLocaleString("ko-KR")}개`;
 
       const renderRows = (rows) => {
-        if (!rows.length) return `<tr><td colspan="13">계산 가능한 종목이 없습니다.</td></tr>`;
+        if (!rows.length) return `<tr><td colspan="20">계산 가능한 종목이 없습니다.</td></tr>`;
         return rows.map((item, index) => {
         const stock = item.stock;
         return `<tr data-rank-code="${escapeHtml(stock.code)}">
@@ -2287,6 +2343,13 @@
           <td>${fmtPct(item.model.roe, 2)}</td>
           <td>${fmtRatio(stock.per, 2)}</td>
           <td>${fmtEok(stock.marketCapEok)}</td>
+          <td>${heatGrowth(finiteNumber(stock.revenueYoY), stock.revenueIncreased)}</td>
+          <td>${heatGrowth(finiteNumber(stock.revenueQoQ), stock.revenueQoQIncreased)}</td>
+          <td>${heatGrowth(finiteNumber(stock.netIncomeYoY), stock.netIncomeIncreased)}</td>
+          <td>${heatGrowth(finiteNumber(stock.netIncomeQoQ), stock.netIncomeQoQIncreased)}</td>
+          <td>${heatGrowth(futureRevenueGrowthFor(stock), stock.forecastRevenueIncreased)}</td>
+          <td>${heatGrowth(futureProfitGrowthFor(stock), stock.forecastNetIncomeIncreased)}</td>
+          <td>${heatGrowth(futureEpsGrowthFor(stock))}</td>
           <td title="${escapeHtml(stock.industry || "")}">${escapeHtml(stock.industry || "")}</td>
           <td><button class="rank-view-btn" type="button" data-rank-code="${escapeHtml(stock.code)}">보기</button></td>
         </tr>`;
@@ -2522,8 +2585,9 @@
           <td>${heatGrowth(finiteNumber(item.revenueQoQ), item.revenueQoQIncreased)}</td>
           <td>${heatGrowth(finiteNumber(item.netIncomeYoY), item.netIncomeIncreased)}</td>
           <td>${heatGrowth(finiteNumber(item.netIncomeQoQ), item.netIncomeQoQIncreased)}</td>
-          <td>${heatGrowth(finiteNumber(item.futureRevenueGrowth))}</td>
-          <td>${heatGrowth(finiteNumber(item.futureProfitGrowth))}</td>
+          <td>${heatGrowth(futureRevenueGrowthFor(item))}</td>
+          <td>${heatGrowth(futureProfitGrowthFor(item))}</td>
+          <td>${heatGrowth(futureEpsGrowthFor(item))}</td>
           <td>${format52w(item)}</td>
           <td>${fmtUsdCompact(finiteNumber(item.marketCap))}</td>
           <td>${fmtCount(finiteNumber(item.volume))}</td>
@@ -2536,11 +2600,11 @@
       $("usDataSummary").textContent = "미국 데이터 없음";
       $("usSelectedName").textContent = "데이터 없음";
       $("usSelectedMeta").textContent = "data/us_latest.json 확인";
-      ["usCurrentPrice", "usTargetPrice", "usTargetUpside", "usFairUpside", "usFairPrice", "usVerdict", "usPeerDelta", "us52w", "usMarketCap", "usVolume", "usPer", "usPeg", "usPs", "usBalanceValuation", "usEvEbitda", "usReturns", "usMargins", "usDebtLiquidity", "usRevenueYoY", "usRevenueQoQ", "usNetIncomeYoY", "usNetIncomeQoQ", "usFutureRevenueGrowth", "usFutureProfitGrowth", "usShortAnalyst", "usBetaRsi", "usMomentum", "usCashDebt", "usFcfProfile", "usQualityScore", "usYieldProfile", "usDataStamp"].forEach((id) => {
+      ["usCurrentPrice", "usTargetPrice", "usTargetUpside", "usFairUpside", "usFairPrice", "usVerdict", "usPeerDelta", "us52w", "usMarketCap", "usVolume", "usPer", "usPeg", "usPs", "usBalanceValuation", "usEvEbitda", "usReturns", "usMargins", "usDebtLiquidity", "usRevenueYoY", "usRevenueQoQ", "usNetIncomeYoY", "usNetIncomeQoQ", "usFutureRevenueGrowth", "usFutureProfitGrowth", "usFutureEpsGrowth", "usShortAnalyst", "usBetaRsi", "usMomentum", "usCashDebt", "usFcfProfile", "usQualityScore", "usYieldProfile", "usDataStamp"].forEach((id) => {
         $(id).textContent = "-";
       });
       $("usPeerSummary").textContent = "표시할 종목 없음";
-      $("usPeerRows").innerHTML = `<tr><td colspan="25">미국 종목 데이터를 불러오지 못했습니다.</td></tr>`;
+      $("usPeerRows").innerHTML = `<tr><td colspan="26">미국 종목 데이터를 불러오지 못했습니다.</td></tr>`;
     }
 
     function usQuoteStamp(stock) {
@@ -2588,8 +2652,9 @@
       $("usRevenueQoQ").innerHTML = `${heatGrowth(finiteNumber(selected.revenueQoQ), selected.revenueQoQIncreased)}${Number.isFinite(finiteNumber(selected.revenuePreviousQuarterMillions)) ? ` · 전분기 ${fmtUsdMillions(finiteNumber(selected.revenuePreviousQuarterMillions))}` : ""}`;
       $("usNetIncomeYoY").innerHTML = `${heatGrowth(finiteNumber(selected.netIncomeYoY), selected.netIncomeIncreased)}${Number.isFinite(finiteNumber(selected.netIncomeQuarterMillions)) ? ` · ${fmtUsdMillions(finiteNumber(selected.netIncomeQuarterMillions))}` : ""}`;
       $("usNetIncomeQoQ").innerHTML = `${heatGrowth(finiteNumber(selected.netIncomeQoQ), selected.netIncomeQoQIncreased)}${Number.isFinite(finiteNumber(selected.netIncomePreviousQuarterMillions)) ? ` · 전분기 ${fmtUsdMillions(finiteNumber(selected.netIncomePreviousQuarterMillions))}` : ""}`;
-      $("usFutureRevenueGrowth").innerHTML = `${heatGrowth(finiteNumber(selected.futureRevenueGrowth))} · 5Y 전망`;
-      $("usFutureProfitGrowth").innerHTML = `${heatGrowth(finiteNumber(selected.futureProfitGrowth))} · ${escapeHtml(selected.futureProfitGrowthMetric || "EPS Growth Forecast (5Y)")}`;
+      $("usFutureRevenueGrowth").innerHTML = `${heatGrowth(futureRevenueGrowthFor(selected))} · 5Y 전망`;
+      $("usFutureProfitGrowth").innerHTML = `${heatGrowth(futureProfitGrowthFor(selected))} · 이익 전망`;
+      $("usFutureEpsGrowth").innerHTML = `${heatGrowth(futureEpsGrowthFor(selected))} · EPS 5Y`;
       $("usShortAnalyst").textContent = `${fmtPct(finiteNumber(selected.shortFloat))} short float · ${selected.analystConsensus || "-"}${Number.isFinite(finiteNumber(selected.analystCount)) ? ` (${Math.round(finiteNumber(selected.analystCount)).toLocaleString("ko-KR")})` : ""}`;
       $("usBetaRsi").textContent = `${fmtRatio(finiteNumber(selected.beta), 2)} / ${fmtRatio(finiteNumber(selected.rsi), 1)}`;
       $("usMomentum").innerHTML = `${heatSignedPct(finiteNumber(selected.priceChange52w))} · 50D ${fmtUsd(finiteNumber(selected.sma50))} / 200D ${fmtUsd(finiteNumber(selected.sma200))}`;
@@ -2681,7 +2746,7 @@
       $("usRankSummary").textContent = `${total.toLocaleString("ko-KR")}개 중 ${rows.length.toLocaleString("ko-KR")}개 계산 가능 · ${exchangeText} · ${themeText}`;
 
       if (!visible.length) {
-        $("usRankRows").innerHTML = `<tr><td colspan="31">조건에 맞는 미국 저평가 종목이 없습니다.</td></tr>`;
+        $("usRankRows").innerHTML = `<tr><td colspan="32">조건에 맞는 미국 저평가 종목이 없습니다.</td></tr>`;
         return;
       }
 
@@ -2713,8 +2778,9 @@
           <td>${heatGrowth(finiteNumber(stock.revenueQoQ), stock.revenueQoQIncreased)}</td>
           <td>${heatGrowth(finiteNumber(stock.netIncomeYoY), stock.netIncomeIncreased)}</td>
           <td>${heatGrowth(finiteNumber(stock.netIncomeQoQ), stock.netIncomeQoQIncreased)}</td>
-          <td>${heatGrowth(finiteNumber(stock.futureRevenueGrowth))}</td>
-          <td>${heatGrowth(finiteNumber(stock.futureProfitGrowth))}</td>
+          <td>${heatGrowth(futureRevenueGrowthFor(stock))}</td>
+          <td>${heatGrowth(futureProfitGrowthFor(stock))}</td>
+          <td>${heatGrowth(futureEpsGrowthFor(stock))}</td>
           <td>${fmtRatio(finiteNumber(stock.debtEquity), 2)}</td>
           <td>${escapeHtml(stock.analystConsensus || "-")}${Number.isFinite(finiteNumber(stock.analystCount)) ? ` (${Math.round(finiteNumber(stock.analystCount)).toLocaleString("ko-KR")})` : ""}</td>
           <td>${format52w(stock)}</td>

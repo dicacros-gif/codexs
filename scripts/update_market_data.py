@@ -435,6 +435,7 @@ def apply_realtime_quote(stock: dict, quote: dict, fetched_at: str) -> dict:
             "consensusEps": consensus_eps,
             "forwardPer": forward_per,
             "forwardEpsGrowth": forward_eps_growth,
+            "futureEpsGrowth": forward_eps_growth,
             "peg": peg_or_none(per, forward_eps_growth),
             "forwardPeg": peg_or_none(forward_per, forward_eps_growth),
             "marketStatus": quote.get("ms"),

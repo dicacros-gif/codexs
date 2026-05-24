@@ -343,6 +343,7 @@ def parse_stockanalysis_fundamentals(symbol: str) -> dict | None:
         "epsGrowthForecast5Y": eps_growth_5y,
         "futureRevenueGrowth": revenue_growth_5y,
         "futureProfitGrowth": eps_growth_5y,
+        "futureEpsGrowth": eps_growth_5y,
         "futureProfitGrowthMetric": "EPS Growth Forecast (5Y)",
         "ttmRevenue": extract_stat_metric(stats_text, "revenue"),
         "ttmGrossProfit": extract_stat_metric(stats_text, "gp"),
