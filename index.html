@@ -173,6 +173,43 @@
       font-weight: 800;
       text-align: right;
     }
+    .rank-split {
+      display: grid;
+      gap: 14px;
+      margin: 14px;
+    }
+    .rank-section {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #fff;
+      overflow: hidden;
+    }
+    .rank-section-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 12px;
+      border-bottom: 1px solid var(--line);
+      background: #fbfcfd;
+    }
+    .rank-section-head h3 {
+      margin: 0;
+      font-size: 0.88rem;
+      font-weight: 950;
+    }
+    .rank-section-head span {
+      color: var(--muted);
+      font-size: 0.76rem;
+      font-weight: 800;
+      text-align: right;
+    }
+    .rank-section .rank-table-wrap {
+      margin: 0;
+      border: 0;
+      border-radius: 0;
+      max-height: 560px;
+    }
     .us-toolbar {
       display: grid;
       grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -998,34 +1035,66 @@
         <div class="meta">S-RIM 10% 감소 시나리오 기준</div>
       </div>
       <div class="rank-toolbar">
-        <div class="rank-filter" aria-label="순위 시장 선택">
-          <button class="active" type="button" data-rank-market="ALL">전체</button>
-          <button type="button" data-rank-market="KOSPI">KOSPI</button>
-          <button type="button" data-rank-market="KOSDAQ">KOSDAQ</button>
-        </div>
-        <div class="rank-summary" id="rankSummary">계산 준비 중</div>
+        <div class="rank-summary" id="rankSummary">KOSPI 100 · KOSDAQ 100 계산 준비 중</div>
       </div>
-      <div class="rank-table-wrap">
-        <table class="rank-table">
-          <thead>
-            <tr>
-              <th>순위</th>
-              <th>시장</th>
-              <th>코드</th>
-              <th>종목명</th>
-              <th>최신 체결가</th>
-              <th>S-RIM 적정가</th>
-              <th>상승여력</th>
-              <th>매수 기준</th>
-              <th>ROE</th>
-              <th>PER</th>
-              <th>시가총액</th>
-              <th>업종</th>
-              <th>보기</th>
-            </tr>
-          </thead>
-          <tbody id="rankRows"></tbody>
-        </table>
+      <div class="rank-split">
+        <section class="rank-section" aria-labelledby="rankKospiTitle">
+          <div class="rank-section-head">
+            <h3 id="rankKospiTitle">KOSPI 저평가 Top 100</h3>
+            <span id="rankKospiSummary">계산 준비 중</span>
+          </div>
+          <div class="rank-table-wrap">
+            <table class="rank-table">
+              <thead>
+                <tr>
+                  <th>순위</th>
+                  <th>시장</th>
+                  <th>코드</th>
+                  <th>종목명</th>
+                  <th>최신 체결가</th>
+                  <th>S-RIM 적정가</th>
+                  <th>상승여력</th>
+                  <th>매수 기준</th>
+                  <th>ROE</th>
+                  <th>PER</th>
+                  <th>시가총액</th>
+                  <th>업종</th>
+                  <th>보기</th>
+                </tr>
+              </thead>
+              <tbody id="rankKospiRows"></tbody>
+            </table>
+          </div>
+        </section>
+
+        <section class="rank-section" aria-labelledby="rankKosdaqTitle">
+          <div class="rank-section-head">
+            <h3 id="rankKosdaqTitle">KOSDAQ 저평가 Top 100</h3>
+            <span id="rankKosdaqSummary">계산 준비 중</span>
+          </div>
+          <div class="rank-table-wrap">
+            <table class="rank-table">
+              <thead>
+                <tr>
+                  <th>순위</th>
+                  <th>시장</th>
+                  <th>코드</th>
+                  <th>종목명</th>
+                  <th>최신 체결가</th>
+                  <th>S-RIM 적정가</th>
+                  <th>상승여력</th>
+                  <th>매수 기준</th>
+                  <th>ROE</th>
+                  <th>PER</th>
+                  <th>시가총액</th>
+                  <th>업종</th>
+                  <th>보기</th>
+                </tr>
+              </thead>
+              <tbody id="rankKosdaqRows"></tbody>
+            </table>
+          </div>
+        </section>
       </div>
     </section>
 
@@ -1551,18 +1620,20 @@
 
     function renderRankings() {
       if (!state.rankings.length) state.rankings = buildRankings();
-      const rows = state.rankings.filter((item) => state.rankMarket === "ALL" || item.stock.market === state.rankMarket);
-      document.querySelectorAll("[data-rank-market]").forEach((button) => {
-        button.classList.toggle("active", button.dataset.rankMarket === state.rankMarket);
-      });
+      const rowsByMarket = {
+        KOSPI: state.rankings.filter((item) => item.stock.market === "KOSPI"),
+        KOSDAQ: state.rankings.filter((item) => item.stock.market === "KOSDAQ")
+      };
+      const kospiRows = rowsByMarket.KOSPI.slice(0, 100);
+      const kosdaqRows = rowsByMarket.KOSDAQ.slice(0, 100);
 
-      $("rankSummary").textContent = `${rows.length.toLocaleString("ko-KR")}개 계산 가능 · PER 1~80, ROE 8.05~80%, 거래량 있는 종목`;
-      if (!rows.length) {
-        $("rankRows").innerHTML = `<tr><td colspan="13">계산 가능한 종목이 없습니다.</td></tr>`;
-        return;
-      }
+      $("rankSummary").textContent = `KOSPI 100 · KOSDAQ 100 · PER 1~80, ROE 8.05~80%, 거래량 있는 종목`;
+      $("rankKospiSummary").textContent = `${rowsByMarket.KOSPI.length.toLocaleString("ko-KR")}개 계산 가능 중 상위 ${kospiRows.length.toLocaleString("ko-KR")}개`;
+      $("rankKosdaqSummary").textContent = `${rowsByMarket.KOSDAQ.length.toLocaleString("ko-KR")}개 계산 가능 중 상위 ${kosdaqRows.length.toLocaleString("ko-KR")}개`;
 
-      $("rankRows").innerHTML = rows.map((item, index) => {
+      const renderRows = (rows) => {
+        if (!rows.length) return `<tr><td colspan="13">계산 가능한 종목이 없습니다.</td></tr>`;
+        return rows.map((item, index) => {
         const stock = item.stock;
         return `<tr data-rank-code="${escapeHtml(stock.code)}">
           <td>${(index + 1).toLocaleString("ko-KR")}</td>
@@ -1579,7 +1650,11 @@
           <td title="${escapeHtml(stock.industry || "")}">${escapeHtml(stock.industry || "")}</td>
           <td><button class="rank-view-btn" type="button" data-rank-code="${escapeHtml(stock.code)}">보기</button></td>
         </tr>`;
-      }).join("");
+        }).join("");
+      };
+
+      $("rankKospiRows").innerHTML = renderRows(kospiRows);
+      $("rankKosdaqRows").innerHTML = renderRows(kosdaqRows);
     }
 
     function usStocks() {
@@ -2160,15 +2235,11 @@
       document.querySelectorAll("[data-view-tab]").forEach((tab) => {
         tab.addEventListener("click", () => setTopView(tab.dataset.viewTab));
       });
-      document.querySelectorAll("[data-rank-market]").forEach((button) => {
-        button.addEventListener("click", () => {
-          state.rankMarket = button.dataset.rankMarket;
-          renderRankings();
+      ["rankKospiRows", "rankKosdaqRows"].forEach((id) => {
+        $(id).addEventListener("click", (event) => {
+          const target = event.target.closest("[data-rank-code]");
+          if (target) openRankedStock(target.dataset.rankCode);
         });
-      });
-      $("rankRows").addEventListener("click", (event) => {
-        const target = event.target.closest("[data-rank-code]");
-        if (target) openRankedStock(target.dataset.rankCode);
       });
       $("peerRows").addEventListener("click", (event) => {
         const target = event.target.closest("[data-peer-code]");
