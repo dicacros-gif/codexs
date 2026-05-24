@@ -18,6 +18,7 @@ ROOT = Path(__file__).resolve().parents[1]
 LATEST = ROOT / "data" / "us_latest.json"
 USER_AGENT = "Mozilla/5.0 (compatible; srim-codexs-us-updater/1.0)"
 SCREENER_URL = "https://api.nasdaq.com/api/screener/stocks?download=true"
+EXCHANGE_FILTERS = {"NASDAQ": "nasdaq", "NYSE": "nyse", "AMEX": "amex"}
 INFO_URL = "https://api.nasdaq.com/api/quote/{symbol}/info?assetclass=stocks"
 SUMMARY_URL = "https://api.nasdaq.com/api/quote/{symbol}/summary?assetclass=stocks"
 NASDAQ_STOCK_URL = "https://www.nasdaq.com/market-activity/stocks/{symbol}"
@@ -310,12 +311,29 @@ def valid_common_stock(row: dict) -> bool:
     return not any(pattern in lowered_name for pattern in EXCLUDED_NAME_PATTERNS)
 
 
-def fetch_screener_rows() -> list[dict]:
-    payload = fetch_json(SCREENER_URL)
+def fetch_screener_rows(exchange_filter: str | None = None) -> list[dict]:
+    url = f"{SCREENER_URL}&exchange={exchange_filter}" if exchange_filter else SCREENER_URL
+    payload = fetch_json(url)
     rows = payload.get("data", {}).get("rows", [])
     if not isinstance(rows, list):
         raise ValueError("Nasdaq screener returned no rows")
     return rows
+
+
+def fetch_exchange_map() -> tuple[dict[str, str], list[dict]]:
+    exchange_map: dict[str, str] = {}
+    failures: list[dict] = []
+    for exchange, exchange_filter in EXCHANGE_FILTERS.items():
+        try:
+            for row in fetch_screener_rows(exchange_filter):
+                symbol = strip_html(row.get("symbol")).upper()
+                if symbol and symbol not in exchange_map:
+                    exchange_map[symbol] = exchange
+        except (HTTPError, URLError, TimeoutError, ValueError, OSError) as exc:
+            failures.append({"source": f"Nasdaq screener exchange {exchange}", "error": str(exc)})
+            print(f"failed Nasdaq exchange map {exchange}: {exc}", file=sys.stderr)
+        time.sleep(0.2)
+    return exchange_map, failures
 
 
 def fetch_quote_payload(symbol: str) -> tuple[str, dict | None, dict | None, str | None]:
@@ -533,7 +551,7 @@ def build_group_stats(stocks: list[dict]) -> dict[str, dict]:
     }
 
 
-def normalize_base_row(row: dict) -> dict:
+def normalize_base_row(row: dict, exchange_map: dict[str, str] | None = None) -> dict:
     symbol = strip_html(row.get("symbol")).upper()
     return {
         "symbol": symbol,
@@ -543,6 +561,7 @@ def normalize_base_row(row: dict) -> dict:
         "price": parse_number(row.get("lastsale")),
         "marketCap": parse_number(row.get("marketCap")),
         "volume": parse_number(row.get("volume")),
+        "exchange": (exchange_map or {}).get(symbol),
         "sourceUrl": NASDAQ_STOCK_URL.format(symbol=symbol.lower()),
     }
 
@@ -789,7 +808,7 @@ def merge_quote(base: dict, summary: dict | None, info: dict | None) -> dict:
         "volume": volume,
         "sector": sector,
         "industry": industry,
-        "exchange": strip_html(deep_value(info, "exchange")) or nested_value(summary or {}, "Exchange") or None,
+        "exchange": strip_html(deep_value(info, "exchange")) or nested_value(summary or {}, "Exchange") or base.get("exchange") or None,
         "stockType": strip_html(deep_value(info, "stockType")) or None,
         "marketStatus": strip_html(deep_value(info, "marketStatus")) or None,
         "priceAsOf": strip_html(deep_value(info, "primaryData", "lastTradeTimestamp")) or None,
@@ -824,8 +843,11 @@ def main() -> int:
         failures.append({"source": "Nasdaq screener", "error": str(exc)})
         print(f"failed Nasdaq screener: {exc}", file=sys.stderr)
 
+    exchange_map, exchange_failures = fetch_exchange_map()
+    failures.extend(exchange_failures)
+
     bases = [
-        normalize_base_row(row)
+        normalize_base_row(row, exchange_map)
         for row in rows
         if valid_common_stock(row)
     ]
