@@ -1,6 +1,6 @@
 {
-  "generatedAt": "2026-05-24T22:16:04+09:00",
-  "asOf": "2026-05-24T22:16:04+09:00",
+  "generatedAt": "2026-05-24T22:27:40+09:00",
+  "asOf": "2026-05-24T22:27:40+09:00",
   "source": "Nasdaq screener stocks API + Nasdaq quote info and summary APIs",
   "priceSource": "Nasdaq quote info primaryData.lastSalePrice when available; otherwise Nasdaq screener lastSale for the same run",
   "filters": {
@@ -102,8 +102,8 @@
   },
   "exchangeCounts": {
     "NASDAQ": 47,
-    "기타": 885,
-    "NYSE": 68
+    "기타": 883,
+    "NYSE": 70
   },
   "themeCounts": {
     "농업/화학": 20,
@@ -214,16 +214,16 @@
       "medianTargetUpside": 0.17335
     },
     "exchange::기타": {
-      "targetCount": 876,
-      "medianTargetUpside": 0.15365
+      "targetCount": 874,
+      "medianTargetUpside": 0.15410000000000001
     },
     "industry::Basic Materials::Metal Mining": {
       "targetCount": 5,
       "medianTargetUpside": 0.09609999999999999
     },
     "exchange::NYSE": {
-      "targetCount": 67,
-      "medianTargetUpside": 0.17199810904506774
+      "targetCount": 69,
+      "medianTargetUpside": 0.16936269732995513
     },
     "theme::금속/광산": {
       "targetCount": 28,
@@ -675,7 +675,7 @@
     },
     "theme::천연가스/LNG": {
       "targetCount": 14,
-      "medianTargetUpside": 0.048799999999999996
+      "medianTargetUpside": 0.049449999999999994
     },
     "industry::Energy::Oil & Gas Production": {
       "targetCount": 21,
@@ -1199,7 +1199,7 @@
     },
     "industry::Utilities::Natural Gas Distribution": {
       "targetCount": 11,
-      "medianTargetUpside": 0.0492
+      "medianTargetUpside": 0.050499999999999996
     },
     "industry::Utilities::Oil & Gas Production": {
       "targetCount": 2,
@@ -11428,18 +11428,18 @@
       "volume": 820086.0,
       "sourceUrl": "https://www.nasdaq.com/market-activity/stocks/mar",
       "exchange": "NASDAQ-GS",
-      "stockType": "Class A Common Stock",
-      "marketStatus": "Closed",
-      "priceAsOf": "May 21, 2026",
-      "isRealTime": false,
-      "priceSource": "Nasdaq quote info primaryData.lastSalePrice",
-      "netChange": -0.68,
-      "pctChange": -0.0018,
+      "stockType": null,
+      "marketStatus": null,
+      "priceAsOf": null,
+      "isRealTime": null,
+      "priceSource": "Nasdaq screener lastSale",
+      "netChange": null,
+      "pctChange": null,
       "targetPrice": 385.0,
       "targetUpside": 0.04293647568739001,
       "fiftyTwoWeekHigh": 380.0,
-      "fiftyTwoWeekLow": 253.56,
-      "fiftyTwoWeekPosition": 0.9141885479278707,
+      "fiftyTwoWeekLow": 253.555,
+      "fiftyTwoWeekPosition": 0.9141919411601881,
       "averageVolume": 1423653.0,
       "shareVolume": 820086.0,
       "previousClose": 369.83,
@@ -38443,9 +38443,9 @@
       "industry": "Major Banks",
       "price": 139.15,
       "marketCap": 95509644112.0,
-      "volume": 3574005.0,
+      "volume": 3574022.0,
       "sourceUrl": "https://www.nasdaq.com/market-activity/stocks/bny",
-      "exchange": null,
+      "exchange": "NYSE",
       "stockType": null,
       "marketStatus": null,
       "priceAsOf": null,
@@ -38455,12 +38455,12 @@
       "pctChange": null,
       "targetPrice": 142.64,
       "targetUpside": 0.025099999999999997,
-      "fiftyTwoWeekHigh": null,
-      "fiftyTwoWeekLow": null,
-      "fiftyTwoWeekPosition": null,
+      "fiftyTwoWeekHigh": 139.57,
+      "fiftyTwoWeekLow": 87.41,
+      "fiftyTwoWeekPosition": 0.9919478527607364,
       "averageVolume": null,
-      "shareVolume": null,
-      "previousClose": null,
+      "shareVolume": 3574022.0,
+      "previousClose": 138.98,
       "per": 17.263,
       "forwardPer": 15.847,
       "peg": 1.016,
@@ -38534,7 +38534,7 @@
       "netIncomeQoQIncreased": null,
       "fundamentalsSource": "StockAnalysis statistics and quarterly financials pages",
       "hasFundamentals": true,
-      "exchangeGroup": "기타",
+      "exchangeGroup": "NYSE",
       "themeTags": [
         "대형은행"
       ],
@@ -102780,9 +102780,9 @@
       "industry": "Natural Gas Distribution",
       "price": 78.47,
       "marketCap": 95968673855.0,
-      "volume": 6201683.0,
+      "volume": 6201760.0,
       "sourceUrl": "https://www.nasdaq.com/market-activity/stocks/wmb",
-      "exchange": null,
+      "exchange": "NYSE",
       "stockType": null,
       "marketStatus": null,
       "priceAsOf": null,
@@ -102790,14 +102790,14 @@
       "priceSource": "Nasdaq screener lastSale",
       "netChange": null,
       "pctChange": null,
-      "targetPrice": 82.33,
-      "targetUpside": 0.0492,
-      "fiftyTwoWeekHigh": null,
-      "fiftyTwoWeekLow": null,
-      "fiftyTwoWeekPosition": null,
-      "averageVolume": null,
-      "shareVolume": null,
-      "previousClose": null,
+      "targetPrice": 83.0,
+      "targetUpside": 0.05772906843379633,
+      "fiftyTwoWeekHigh": 80.075,
+      "fiftyTwoWeekLow": 55.82,
+      "fiftyTwoWeekPosition": 0.9338280766852194,
+      "averageVolume": 9114615.0,
+      "shareVolume": 6201760.0,
+      "previousClose": 77.52,
       "per": 34.415,
       "forwardPer": 33.249,
       "peg": 1.392,
@@ -102871,7 +102871,7 @@
       "netIncomeQoQIncreased": true,
       "fundamentalsSource": "StockAnalysis statistics and quarterly financials pages",
       "hasFundamentals": true,
-      "exchangeGroup": "기타",
+      "exchangeGroup": "NYSE",
       "themeTags": [
         "천연가스/LNG"
       ],
@@ -104779,13 +104779,13 @@
       "volume": 2446583.0,
       "sourceUrl": "https://www.nasdaq.com/market-activity/stocks/duk",
       "exchange": "NYSE",
-      "stockType": "Common Stock",
-      "marketStatus": "Closed",
-      "priceAsOf": "May 21, 2026",
-      "isRealTime": false,
-      "priceSource": "Nasdaq quote info primaryData.lastSalePrice",
-      "netChange": 1.01,
-      "pctChange": 0.008100000000000001,
+      "stockType": null,
+      "marketStatus": null,
+      "priceAsOf": null,
+      "isRealTime": null,
+      "priceSource": "Nasdaq screener lastSale",
+      "netChange": null,
+      "pctChange": null,
       "targetPrice": 138.0,
       "targetUpside": 0.09811410837908818,
       "fiftyTwoWeekHigh": 134.49,
@@ -106350,204 +106350,204 @@
   ],
   "failures": [
     {
+      "source": "Nasdaq quote DUK",
+      "error": "info: HTTP Error 403: Forbidden"
+    },
+    {
+      "source": "Nasdaq quote MAR",
+      "error": "info: HTTP Error 403: Forbidden"
+    },
+    {
       "source": "Nasdaq quote FDX",
-      "error": "HTTP Error 403: Forbidden"
+      "error": "summary: HTTP Error 403: Forbidden; info: HTTP Error 403: Forbidden"
     },
     {
       "source": "Nasdaq quote BNY",
-      "error": "HTTP Error 403: Forbidden"
+      "error": "info: HTTP Error 403: Forbidden"
     },
     {
       "source": "Nasdaq quote WMB",
-      "error": "HTTP Error 403: Forbidden"
+      "error": "info: HTTP Error 403: Forbidden"
     },
     {
       "source": "Nasdaq quote GD",
-      "error": "HTTP Error 403: Forbidden"
-    },
-    {
-      "source": "Nasdaq quote ADP",
-      "error": "HTTP Error 403: Forbidden"
+      "error": "summary: HTTP Error 403: Forbidden; info: HTTP Error 403: Forbidden"
     },
     {
       "source": "Nasdaq quote MCK",
-      "error": "HTTP Error 403: Forbidden"
+      "error": "summary: HTTP Error 403: Forbidden; info: HTTP Error 403: Forbidden"
     },
     {
-      "source": "Nasdaq quote FCX",
-      "error": "HTTP Error 403: Forbidden"
+      "source": "Nasdaq quote ADP",
+      "error": "summary: HTTP Error 403: Forbidden; info: HTTP Error 403: Forbidden"
     },
     {
       "source": "Nasdaq quote CMCSA",
-      "error": "HTTP Error 403: Forbidden"
+      "error": "summary: HTTP Error 403: Forbidden; info: HTTP Error 403: Forbidden"
+    },
+    {
+      "source": "Nasdaq quote FCX",
+      "error": "summary: HTTP Error 403: Forbidden; info: HTTP Error 403: Forbidden"
     },
     {
       "source": "Nasdaq quote CMI",
-      "error": "HTTP Error 403: Forbidden"
+      "error": "summary: HTTP Error 403: Forbidden; info: HTTP Error 403: Forbidden"
     },
     {
       "source": "Nasdaq quote BX",
-      "error": "HTTP Error 403: Forbidden"
+      "error": "summary: HTTP Error 403: Forbidden; info: HTTP Error 403: Forbidden"
     },
     {
       "source": "Nasdaq quote PNC",
-      "error": "HTTP Error 403: Forbidden"
-    },
-    {
-      "source": "Nasdaq quote WM",
-      "error": "HTTP Error 403: Forbidden"
+      "error": "summary: HTTP Error 403: Forbidden; info: HTTP Error 403: Forbidden"
     },
     {
       "source": "Nasdaq quote INTU",
-      "error": "HTTP Error 403: Forbidden"
+      "error": "summary: HTTP Error 403: Forbidden; info: HTTP Error 403: Forbidden"
     },
     {
       "source": "Nasdaq quote HCA",
-      "error": "HTTP Error 403: Forbidden"
+      "error": "summary: HTTP Error 403: Forbidden; info: HTTP Error 403: Forbidden"
+    },
+    {
+      "source": "Nasdaq quote WM",
+      "error": "summary: HTTP Error 403: Forbidden; info: HTTP Error 403: Forbidden"
     },
     {
       "source": "Nasdaq quote ICE",
-      "error": "HTTP Error 403: Forbidden"
-    },
-    {
-      "source": "Nasdaq quote BSX",
-      "error": "HTTP Error 403: Forbidden"
+      "error": "summary: HTTP Error 403: Forbidden; info: HTTP Error 403: Forbidden"
     },
     {
       "source": "Nasdaq quote BE",
-      "error": "HTTP Error 403: Forbidden"
+      "error": "summary: HTTP Error 403: Forbidden; info: HTTP Error 403: Forbidden"
+    },
+    {
+      "source": "Nasdaq quote BSX",
+      "error": "summary: HTTP Error 403: Forbidden; info: HTTP Error 403: Forbidden"
     },
     {
       "source": "Nasdaq quote EPD",
-      "error": "HTTP Error 403: Forbidden"
-    },
-    {
-      "source": "Nasdaq quote AMT",
-      "error": "HTTP Error 403: Forbidden"
+      "error": "summary: HTTP Error 403: Forbidden; info: HTTP Error 403: Forbidden"
     },
     {
       "source": "Nasdaq quote ELV",
-      "error": "HTTP Error 403: Forbidden"
+      "error": "summary: HTTP Error 403: Forbidden; info: HTTP Error 403: Forbidden"
+    },
+    {
+      "source": "Nasdaq quote AMT",
+      "error": "summary: HTTP Error 403: Forbidden; info: HTTP Error 403: Forbidden"
     },
     {
       "source": "Nasdaq quote USB",
-      "error": "HTTP Error 403: Forbidden"
-    },
-    {
-      "source": "Nasdaq quote CSX",
-      "error": "HTTP Error 403: Forbidden"
+      "error": "summary: HTTP Error 403: Forbidden; info: HTTP Error 403: Forbidden"
     },
     {
       "source": "Nasdaq quote MNST",
-      "error": "HTTP Error 403: Forbidden"
-    },
-    {
-      "source": "Nasdaq quote ABNB",
-      "error": "HTTP Error 403: Forbidden"
-    },
-    {
-      "source": "Nasdaq quote CIEN",
-      "error": "HTTP Error 403: Forbidden"
+      "error": "summary: HTTP Error 403: Forbidden; info: HTTP Error 403: Forbidden"
     },
     {
       "source": "Nasdaq quote KKR",
-      "error": "HTTP Error 403: Forbidden"
+      "error": "summary: HTTP Error 403: Forbidden; info: HTTP Error 403: Forbidden"
     },
     {
-      "source": "Nasdaq quote MDLZ",
-      "error": "HTTP Error 403: Forbidden"
+      "source": "Nasdaq quote CSX",
+      "error": "summary: HTTP Error 403: Forbidden; info: HTTP Error 403: Forbidden"
     },
     {
-      "source": "Nasdaq quote MRSH",
-      "error": "HTTP Error 403: Forbidden"
+      "source": "Nasdaq quote ABNB",
+      "error": "summary: HTTP Error 403: Forbidden; info: HTTP Error 403: Forbidden"
     },
     {
-      "source": "Nasdaq quote DDOG",
-      "error": "HTTP Error 403: Forbidden"
+      "source": "Nasdaq quote CIEN",
+      "error": "summary: HTTP Error 403: Forbidden; info: HTTP Error 403: Forbidden"
     },
     {
       "source": "Nasdaq quote MMM",
-      "error": "HTTP Error 403: Forbidden"
+      "error": "summary: HTTP Error 403: Forbidden; info: HTTP Error 403: Forbidden"
     },
     {
-      "source": "Nasdaq quote MCO",
-      "error": "HTTP Error 403: Forbidden"
+      "source": "Nasdaq quote MDLZ",
+      "error": "summary: HTTP Error 403: Forbidden; info: HTTP Error 403: Forbidden"
     },
     {
-      "source": "Nasdaq quote NOC",
-      "error": "HTTP Error 403: Forbidden"
+      "source": "Nasdaq quote DDOG",
+      "error": "summary: HTTP Error 403: Forbidden; info: HTTP Error 403: Forbidden"
     },
     {
       "source": "Nasdaq quote RKLB",
-      "error": "HTTP Error 403: Forbidden"
+      "error": "summary: HTTP Error 403: Forbidden; info: HTTP Error 403: Forbidden"
     },
     {
-      "source": "Nasdaq quote MPWR",
-      "error": "HTTP Error 403: Forbidden"
+      "source": "Nasdaq quote MRSH",
+      "error": "summary: HTTP Error 403: Forbidden; info: HTTP Error 403: Forbidden"
     },
     {
-      "source": "Nasdaq quote NET",
-      "error": "HTTP Error 403: Forbidden"
+      "source": "Nasdaq quote MCO",
+      "error": "summary: HTTP Error 403: Forbidden; info: HTTP Error 403: Forbidden"
+    },
+    {
+      "source": "Nasdaq quote NOC",
+      "error": "summary: HTTP Error 403: Forbidden; info: HTTP Error 403: Forbidden"
     },
     {
       "source": "Nasdaq quote EMR",
-      "error": "HTTP Error 403: Forbidden"
+      "error": "summary: HTTP Error 403: Forbidden; info: HTTP Error 403: Forbidden"
     },
     {
-      "source": "Nasdaq quote ORLY",
-      "error": "HTTP Error 403: Forbidden"
+      "source": "Nasdaq quote NET",
+      "error": "summary: HTTP Error 403: Forbidden; info: HTTP Error 403: Forbidden"
     },
     {
       "source": "Nasdaq quote SHW",
-      "error": "HTTP Error 403: Forbidden"
+      "error": "summary: HTTP Error 403: Forbidden; info: HTTP Error 403: Forbidden"
+    },
+    {
+      "source": "Nasdaq quote MPWR",
+      "error": "summary: HTTP Error 403: Forbidden; info: HTTP Error 403: Forbidden"
+    },
+    {
+      "source": "Nasdaq quote ORLY",
+      "error": "summary: HTTP Error 403: Forbidden; info: HTTP Error 403: Forbidden"
     },
     {
       "source": "Nasdaq quote CI",
-      "error": "HTTP Error 403: Forbidden"
-    },
-    {
-      "source": "Nasdaq quote KMI",
-      "error": "HTTP Error 403: Forbidden"
+      "error": "summary: HTTP Error 403: Forbidden; info: HTTP Error 403: Forbidden"
     },
     {
       "source": "Nasdaq quote ROST",
-      "error": "HTTP Error 403: Forbidden"
-    },
-    {
-      "source": "Nasdaq quote CVNA",
-      "error": "HTTP Error 403: Forbidden"
+      "error": "summary: HTTP Error 403: Forbidden; info: HTTP Error 403: Forbidden"
     },
     {
       "source": "Nasdaq quote EOG",
-      "error": "HTTP Error 403: Forbidden"
+      "error": "summary: HTTP Error 403: Forbidden; info: HTTP Error 403: Forbidden"
     },
     {
-      "source": "Nasdaq quote LITE",
-      "error": "HTTP Error 403: Forbidden"
+      "source": "Nasdaq quote KMI",
+      "error": "summary: HTTP Error 403: Forbidden; info: HTTP Error 403: Forbidden"
     },
     {
       "source": "Nasdaq quote APO",
-      "error": "HTTP Error 403: Forbidden"
+      "error": "summary: HTTP Error 403: Forbidden; info: HTTP Error 403: Forbidden"
     },
     {
       "source": "Nasdaq quote COHR",
-      "error": "HTTP Error 403: Forbidden"
+      "error": "summary: HTTP Error 403: Forbidden; info: HTTP Error 403: Forbidden"
     },
     {
       "source": "Nasdaq quote MPC",
-      "error": "HTTP Error 403: Forbidden"
+      "error": "summary: HTTP Error 403: Forbidden; info: HTTP Error 403: Forbidden"
+    },
+    {
+      "source": "Nasdaq quote CVNA",
+      "error": "summary: HTTP Error 403: Forbidden; info: HTTP Error 403: Forbidden"
+    },
+    {
+      "source": "Nasdaq quote LITE",
+      "error": "summary: HTTP Error 403: Forbidden; info: HTTP Error 403: Forbidden"
     },
     {
       "source": "Nasdaq quote VLO",
-      "error": "HTTP Error 403: Forbidden"
-    },
-    {
-      "source": "Nasdaq quote HLT",
-      "error": "HTTP Error 403: Forbidden"
-    },
-    {
-      "source": "Nasdaq quote ITW",
-      "error": "HTTP Error 403: Forbidden"
+      "error": "summary: HTTP Error 403: Forbidden; info: HTTP Error 403: Forbidden"
     }
   ]
 }
