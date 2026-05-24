@@ -17,8 +17,10 @@ ROOT = Path(__file__).resolve().parents[1]
 LATEST = ROOT / "data" / "latest.json"
 USER_AGENT = "Mozilla/5.0 (compatible; srim-codexs-updater/2.0)"
 NAVER_MARKET_URL = "https://finance.naver.com/sise/sise_market_sum.naver"
+NAVER_REALTIME_URL = "https://polling.finance.naver.com/api/realtime"
 KIND_CORP_URL = "https://kind.krx.co.kr/corpgeneral/corpList.do?method=download&searchType=13"
 MARKETS = {"KOSPI": "0", "KOSDAQ": "1"}
+REALTIME_CHUNK_SIZE = 80
 
 
 def read_json(path: Path, fallback: dict) -> dict:
@@ -29,7 +31,7 @@ def read_json(path: Path, fallback: dict) -> dict:
 
 
 def fetch_bytes(url: str) -> bytes:
-    request = Request(url, headers={"User-Agent": USER_AGENT})
+    request = Request(url, headers={"User-Agent": USER_AGENT, "Referer": "https://finance.naver.com/"})
     with urlopen(request, timeout=30) as response:
         return response.read()
 
@@ -58,6 +60,64 @@ def parse_int(value: str | None) -> int | None:
     if number is None:
         return None
     return int(round(number))
+
+
+def chunked(values: list[str], size: int) -> list[list[str]]:
+    return [values[index:index + size] for index in range(0, len(values), size)]
+
+
+def fetch_realtime_quotes(codes: list[str]) -> tuple[dict[str, dict], list[dict]]:
+    quotes: dict[str, dict] = {}
+    failures: list[dict] = []
+    for chunk in chunked(codes, REALTIME_CHUNK_SIZE):
+        query = f"SERVICE_ITEM:{','.join(chunk)}"
+        url = f"{NAVER_REALTIME_URL}?{urlencode({'query': query})}"
+        try:
+            raw = fetch_bytes(url)
+            payload = json.loads(raw.decode("euc-kr", "replace"))
+            areas = payload.get("result", {}).get("areas", [])
+            data = areas[0].get("datas", []) if areas else []
+            for item in data:
+                code = str(item.get("cd", "")).zfill(6)
+                if code:
+                    quotes[code] = item
+        except (URLError, TimeoutError, ValueError, OSError, json.JSONDecodeError) as exc:
+            failures.append({"source": "Naver realtime polling", "error": str(exc), "codes": chunk[:3]})
+            print(f"failed realtime chunk {chunk[:3]}: {exc}", file=sys.stderr)
+        time.sleep(0.05)
+    return quotes, failures
+
+
+def quote_number(quote: dict | None, key: str) -> float | None:
+    if not quote:
+        return None
+    value = quote.get(key)
+    if isinstance(value, (int, float)) and not isinstance(value, bool):
+        return float(value)
+    return parse_number(str(value)) if value is not None else None
+
+
+def quote_int(quote: dict | None, key: str) -> int | None:
+    value = quote_number(quote, key)
+    return int(round(value)) if value is not None else None
+
+
+def quote_market_cap_eok(price: int | None, shares: int | None) -> int | None:
+    if not price or not shares:
+        return None
+    return int(round(price * shares / 100000000))
+
+
+def quote_per(price: int | None, eps: float | None) -> float | None:
+    if not price or eps is None or eps <= 0:
+        return None
+    return price / eps
+
+
+def quote_roe_from_eps_bps(eps: float | None, bps: float | None) -> float | None:
+    if eps is None or bps is None or bps <= 0:
+        return None
+    return eps / bps
 
 
 def fetch_kind_company_map() -> dict[str, dict]:
@@ -157,6 +217,49 @@ def fetch_naver_market(market: str, companies: dict[str, dict]) -> list[dict]:
     return stocks
 
 
+def apply_realtime_quote(stock: dict, quote: dict, fetched_at: str) -> dict:
+    current_price = quote_int(quote, "nv")
+    shares = quote_int(quote, "countOfListedStock")
+    volume = quote_int(quote, "aq")
+    eps = quote_number(quote, "eps")
+    bps = quote_number(quote, "bps")
+    per = quote_per(current_price, eps)
+    roe_from_eps_bps = quote_roe_from_eps_bps(eps, bps)
+    market_cap_eok = quote_market_cap_eok(current_price, shares)
+
+    if current_price is not None:
+        stock["currentPrice"] = current_price
+    if shares is not None:
+        stock["shares"] = shares
+    if volume is not None:
+        stock["volume"] = volume
+    if market_cap_eok is not None:
+        stock["marketCapEok"] = market_cap_eok
+    if per is not None:
+        stock["per"] = per
+    if roe_from_eps_bps is not None:
+        stock["roeFromEpsBps"] = roe_from_eps_bps
+
+    stock.update(
+        {
+            "previousClose": quote_int(quote, "pcv"),
+            "openPrice": quote_int(quote, "ov"),
+            "highPrice": quote_int(quote, "hv"),
+            "lowPrice": quote_int(quote, "lv"),
+            "change": quote_int(quote, "cv"),
+            "changeRate": (quote_number(quote, "cr") or 0) / 100 if quote_number(quote, "cr") is not None else None,
+            "accumulatedTradeValue": quote_int(quote, "aa"),
+            "eps": eps,
+            "bps": bps,
+            "consensusEps": quote_number(quote, "cnsEps"),
+            "marketStatus": quote.get("ms"),
+            "quoteFetchedAt": fetched_at,
+            "priceSource": "Naver Finance realtime polling SERVICE_ITEM",
+        }
+    )
+    return stock
+
+
 def env_float(name: str, default: float) -> float:
     value = os.getenv(name)
     if value is None or value == "":
@@ -210,6 +313,18 @@ def main() -> int:
     if not stocks:
         stocks = previous.get("stocks", [])
 
+    quote_fetched_at = dt.datetime.now(dt.timezone.utc).astimezone().isoformat(timespec="seconds")
+    if stocks:
+        realtime_quotes, realtime_failures = fetch_realtime_quotes([stock["code"] for stock in stocks if stock.get("code")])
+        failures.extend(realtime_failures)
+        for stock in stocks:
+            quote = realtime_quotes.get(stock.get("code"))
+            if quote:
+                apply_realtime_quote(stock, quote, quote_fetched_at)
+                stock["hasRealtimePrice"] = True
+            else:
+                stock["hasRealtimePrice"] = False
+
     market_order = {"KOSPI": 0, "KOSDAQ": 1}
     stocks.sort(key=lambda item: (market_order.get(item.get("market", ""), 9), item.get("name", ""), item.get("code", "")))
     counts = {
@@ -220,7 +335,9 @@ def main() -> int:
     payload = {
         "generatedAt": generated_at,
         "asOf": generated_at,
-        "source": "Naver Finance market summary + KRX KIND listed company list",
+        "priceFetchedAt": quote_fetched_at,
+        "source": "Naver Finance realtime polling + Naver Finance market summary + KRX KIND listed company list",
+        "priceSource": "Naver Finance realtime polling SERVICE_ITEM",
         "counts": counts,
         "market": {
             "riskFreeRate": env_float("RISK_FREE_RATE", 0.016),

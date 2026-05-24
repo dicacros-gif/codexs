@@ -17,6 +17,7 @@ ROOT = Path(__file__).resolve().parents[1]
 LATEST = ROOT / "data" / "us_latest.json"
 USER_AGENT = "Mozilla/5.0 (compatible; srim-codexs-us-updater/1.0)"
 SCREENER_URL = "https://api.nasdaq.com/api/screener/stocks?download=true"
+INFO_URL = "https://api.nasdaq.com/api/quote/{symbol}/info?assetclass=stocks"
 SUMMARY_URL = "https://api.nasdaq.com/api/quote/{symbol}/summary?assetclass=stocks"
 NASDAQ_STOCK_URL = "https://www.nasdaq.com/market-activity/stocks/{symbol}"
 
@@ -97,10 +98,15 @@ def parse_number(value: object) -> float | None:
 
 def parse_range(value: object) -> tuple[float | None, float | None]:
     text = strip_html(value)
-    if "/" not in text:
-        return None, None
-    high_text, low_text = text.split("/", 1)
-    return parse_number(high_text), parse_number(low_text)
+    if "/" in text:
+        high_text, low_text = text.split("/", 1)
+        return parse_number(high_text), parse_number(low_text)
+    match = re.search(r"(-?\d+(?:\.\d+)?)\s*-\s*(-?\d+(?:\.\d+)?)", text.replace("$", "").replace(",", ""))
+    if match:
+        low = parse_number(match.group(1))
+        high = parse_number(match.group(2))
+        return high, low
+    return None, None
 
 
 def nested_value(summary: dict, key: str) -> str:
@@ -108,6 +114,15 @@ def nested_value(summary: dict, key: str) -> str:
     if isinstance(item, dict):
         return strip_html(item.get("value"))
     return strip_html(item)
+
+
+def deep_value(payload: dict | None, *keys: str) -> object:
+    item: object = payload or {}
+    for key in keys:
+        if not isinstance(item, dict):
+            return None
+        item = item.get(key)
+    return item
 
 
 def valid_common_stock(row: dict) -> bool:
@@ -138,15 +153,24 @@ def fetch_screener_rows() -> list[dict]:
     return rows
 
 
-def fetch_quote_summary(symbol: str) -> tuple[str, dict | None, str | None]:
+def fetch_quote_payload(symbol: str) -> tuple[str, dict | None, dict | None, str | None]:
     try:
-        payload = fetch_json(SUMMARY_URL.format(symbol=symbol.lower()), timeout=20)
-        summary = payload.get("data", {}).get("summaryData", {})
+        summary_payload = fetch_json(SUMMARY_URL.format(symbol=symbol.lower()), timeout=20)
+        info_payload = fetch_json(INFO_URL.format(symbol=symbol.lower()), timeout=20)
+        summary = summary_payload.get("data", {}).get("summaryData", {})
+        info = info_payload.get("data", {})
         if not isinstance(summary, dict):
-            return symbol, None, "empty summary"
-        return symbol, summary, None
+            summary = {}
+        if not isinstance(info, dict):
+            info = {}
+        return symbol, summary, info, None
     except (HTTPError, URLError, TimeoutError, ValueError, OSError) as exc:
-        return symbol, None, str(exc)
+        return symbol, None, None, str(exc)
+
+
+def fetch_quote_summary(symbol: str) -> tuple[str, dict | None, str | None]:
+    symbol, summary, _info, error = fetch_quote_payload(symbol)
+    return symbol, summary, error
 
 
 def median_or_none(values: list[float]) -> float | None:
@@ -190,16 +214,43 @@ def normalize_base_row(row: dict) -> dict:
     }
 
 
-def merge_summary(base: dict, summary: dict | None) -> dict:
+def quote_price(info: dict | None, fallback: float | None) -> float | None:
+    return parse_number(deep_value(info, "primaryData", "lastSalePrice")) or fallback
+
+
+def quote_volume(info: dict | None, summary: dict | None, fallback: float | None) -> float | None:
+    return (
+        parse_number(deep_value(info, "primaryData", "volume"))
+        or parse_number(nested_value(summary or {}, "ShareVolume"))
+        or fallback
+    )
+
+
+def quote_market_cap(summary: dict | None, fallback: float | None) -> float | None:
+    return parse_number(nested_value(summary or {}, "MarketCap")) or fallback
+
+
+def quote_52w_range(info: dict | None, summary: dict | None) -> tuple[float | None, float | None]:
+    high, low = parse_range(deep_value(info, "keyStats", "fiftyTwoWeekHighLow", "value"))
+    if high and low:
+        return high, low
+    return parse_range(nested_value(summary or {}, "FiftTwoWeekHighLow"))
+
+
+def merge_quote(base: dict, summary: dict | None, info: dict | None) -> dict:
     sector = nested_value(summary or {}, "Sector") or base["sector"]
     industry = nested_value(summary or {}, "Industry") or base["industry"]
     target_price = parse_number(nested_value(summary or {}, "OneYrTarget"))
-    high_52w, low_52w = parse_range(nested_value(summary or {}, "FiftTwoWeekHighLow"))
+    high_52w, low_52w = quote_52w_range(info, summary)
     average_volume = parse_number(nested_value(summary or {}, "AverageVolume"))
     share_volume = parse_number(nested_value(summary or {}, "ShareVolume"))
     previous_close = parse_number(nested_value(summary or {}, "PreviousClose"))
+    price = quote_price(info, base.get("price"))
+    volume = quote_volume(info, summary, base.get("volume"))
+    market_cap = quote_market_cap(summary, base.get("marketCap"))
+    net_change = parse_number(deep_value(info, "primaryData", "netChange"))
+    pct_change = parse_number(deep_value(info, "primaryData", "percentageChange"))
 
-    price = base.get("price")
     target_upside = target_price / price - 1 if price and target_price and price > 0 else None
     if target_upside is not None and (target_upside < -0.9 or target_upside > 4):
         target_upside = None
@@ -210,8 +261,20 @@ def merge_summary(base: dict, summary: dict | None) -> dict:
 
     return {
         **base,
+        "name": strip_html(deep_value(info, "companyName")) or base["name"],
+        "price": price,
+        "marketCap": market_cap,
+        "volume": volume,
         "sector": sector,
         "industry": industry,
+        "exchange": strip_html(deep_value(info, "exchange")) or None,
+        "stockType": strip_html(deep_value(info, "stockType")) or None,
+        "marketStatus": strip_html(deep_value(info, "marketStatus")) or None,
+        "priceAsOf": strip_html(deep_value(info, "primaryData", "lastTradeTimestamp")) or None,
+        "isRealTime": deep_value(info, "primaryData", "isRealTime") if isinstance(deep_value(info, "primaryData", "isRealTime"), bool) else None,
+        "priceSource": "Nasdaq quote info primaryData.lastSalePrice",
+        "netChange": net_change,
+        "pctChange": pct_change / 100 if pct_change is not None else None,
         "targetPrice": target_price,
         "targetUpside": target_upside,
         "fiftyTwoWeekHigh": high_52w,
@@ -248,18 +311,20 @@ def main() -> int:
     print(f"Nasdaq US common stocks selected: {len(bases)}")
 
     summaries: dict[str, dict | None] = {}
+    infos: dict[str, dict | None] = {}
     if bases:
         with ThreadPoolExecutor(max_workers=workers) as executor:
-            future_map = {executor.submit(fetch_quote_summary, stock["symbol"]): stock["symbol"] for stock in bases}
+            future_map = {executor.submit(fetch_quote_payload, stock["symbol"]): stock["symbol"] for stock in bases}
             for index, future in enumerate(as_completed(future_map), start=1):
-                symbol, summary, error = future.result()
+                symbol, summary, info, error = future.result()
                 summaries[symbol] = summary
+                infos[symbol] = info
                 if error:
-                    failures.append({"source": f"Nasdaq summary {symbol}", "error": error})
+                    failures.append({"source": f"Nasdaq quote {symbol}", "error": error})
                 if index % 100 == 0:
-                    print(f"summary fetched: {index}/{len(bases)}")
+                    print(f"quote fetched: {index}/{len(bases)}")
 
-    stocks = [merge_summary(stock, summaries.get(stock["symbol"])) for stock in bases]
+    stocks = [merge_quote(stock, summaries.get(stock["symbol"]), infos.get(stock["symbol"])) for stock in bases]
     if not stocks:
         stocks = previous.get("stocks", [])
 
@@ -273,7 +338,8 @@ def main() -> int:
     payload = {
         "generatedAt": generated_at,
         "asOf": generated_at,
-        "source": "Nasdaq screener stocks API + Nasdaq quote summary API",
+        "source": "Nasdaq screener stocks API + Nasdaq quote info and summary APIs",
+        "priceSource": "Nasdaq quote info primaryData.lastSalePrice",
         "filters": {
             "country": "United States",
             "minimumMarketCap": min_market_cap,

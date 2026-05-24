@@ -760,7 +760,7 @@
             <label>회사명
               <input id="companyName" type="text" autocomplete="off" value="삼성전자">
             </label>
-            <label>현재주가 (원)
+            <label>최신 체결가 (원)
               <input id="currentPrice" type="number" min="0" step="1" value="292500">
             </label>
           </div>
@@ -915,7 +915,7 @@
                     <th>시장</th>
                     <th>코드</th>
                     <th>종목명</th>
-                    <th>현재가</th>
+                    <th>최신 체결가</th>
                     <th>S-RIM 적정가</th>
                     <th>상승여력</th>
                     <th>매수 기준</th>
@@ -997,7 +997,7 @@
               <th>시장</th>
               <th>코드</th>
               <th>종목명</th>
-              <th>현재가</th>
+              <th>최신 체결가</th>
               <th>S-RIM 적정가</th>
               <th>상승여력</th>
               <th>매수 기준</th>
@@ -1037,7 +1037,7 @@
           </div>
           <div class="us-kpis">
             <div class="kpi">
-              <div class="label">현재가</div>
+              <div class="label">최신 체결가</div>
               <div class="value" id="usCurrentPrice">-</div>
             </div>
             <div class="kpi">
@@ -1084,7 +1084,7 @@
                 <tr>
                   <th>티커</th>
                   <th>회사명</th>
-                  <th>현재가</th>
+                  <th>최신 체결가</th>
                   <th>1년 목표가</th>
                   <th>목표가 대비</th>
                   <th>추정 적정가</th>
@@ -1102,7 +1102,7 @@
         </article>
       </div>
       <div class="us-method">
-        추정 적정가는 애널리스트 1년 목표가와 같은 업종 경쟁사의 목표상승률 중간값을 함께 반영합니다. 목표가가 없으면 경쟁사 중간값 기반 가격으로 계산합니다.
+        현재가는 Nasdaq 종목별 quote info의 latest trade 값을 사용하며, 장이 닫혀 있거나 지연 시세인 경우 기준일과 상태를 함께 표시합니다. 추정 적정가는 애널리스트 1년 목표가와 같은 업종 경쟁사의 목표상승률 중간값을 함께 반영합니다.
       </div>
     </section>
   </div>
@@ -1701,6 +1701,14 @@
       $("usPeerRows").innerHTML = `<tr><td colspan="12">미국 종목 데이터를 불러오지 못했습니다.</td></tr>`;
     }
 
+    function usQuoteStamp(stock) {
+      return [
+        formatQuoteDate(stock.priceAsOf) || formatDataDate(state.usLatest.generatedAt),
+        stock.marketStatus || "",
+        realtimeText(stock.isRealTime)
+      ].filter(Boolean).join(" · ");
+    }
+
     function renderUsView(preferredSymbol = "") {
       const selected = populateUsSelectors(preferredSymbol);
       if (!selected) {
@@ -1715,7 +1723,7 @@
 
       $("usDataSummary").textContent = `${total.toLocaleString("ko-KR")}개 · ${sectors.toLocaleString("ko-KR")}개 섹터 · 목표가 ${targetCount.toLocaleString("ko-KR")}개`;
       $("usSelectedName").textContent = `${selected.symbol} · ${selected.name || selected.symbol}`;
-      $("usSelectedMeta").textContent = `${selected.sector || "-"} · ${selected.industry || "-"}`;
+      $("usSelectedMeta").textContent = `${selected.sector || "-"} · ${selected.industry || "-"} · ${usQuoteStamp(selected)}`;
       $("usCurrentPrice").textContent = fmtUsd(valuation.price);
       $("usTargetPrice").textContent = fmtUsd(valuation.targetPrice);
       $("usTargetUpside").textContent = fmtSignedPct(valuation.targetUpside);
@@ -1726,7 +1734,7 @@
       $("us52w").textContent = format52w(selected);
       $("usMarketCap").textContent = fmtUsdCompact(finiteNumber(selected.marketCap));
       $("usVolume").textContent = fmtCount(finiteNumber(selected.volume));
-      $("usDataStamp").textContent = formatDataDate(state.usLatest.generatedAt);
+      $("usDataStamp").textContent = usQuoteStamp(selected);
       $("usTargetKpi").className = `kpi ${pctKind(valuation.targetUpside)}`;
       $("usFairKpi").className = `kpi ${pctKind(valuation.fairUpside)}`;
       $("usVerdictKpi").className = `kpi ${verdict.kind}`;
@@ -1794,7 +1802,7 @@
       </tr>`).join("");
 
       $("inputSummary").innerHTML = [
-        `현재주가 ${fmtWon(model.currentPrice)}, 시가총액 ${fmtEok(model.currentPrice * model.shareCount / 100000000)}`,
+        `최신 체결가 ${fmtWon(model.currentPrice)}, 시가총액 ${fmtEok(model.currentPrice * model.shareCount / 100000000)}`,
         `지배주주지분 ${fmtEok(model.equityEok)}, 지배주주순이익 ${fmtEok(model.netIncomeEok)}`,
         `ROE ${fmtPct(model.roe, 2)}, 요구수익률 ${fmtPct(model.requiredReturn, 2)}, Spread ${fmtPct(model.roe - model.requiredReturn, 2)}`,
         `안전마진 ${fmtPct(model.marginOfSafety, 0)}, 분석일 조정 ${fmtRatio(model.dateAdjustmentYears)}년`
@@ -1930,10 +1938,15 @@
         document.querySelector('input[name="roeMode"][value="manual"]').checked = true;
       }
       $("stockPicker").value = stock.code;
-      const sourceDate = stock.asOf || state.latest.asOf || state.latest.generatedAt || "latest.json";
-      const freshness = stock.hasMarketData === false ? "시세 없음" : "최신 시세";
-      $("selectedSource").textContent = `${stock.market || "시장"} · ${freshness}`;
-      $("dataStamp").textContent = `${formatDataDate(sourceDate)} · ${stock.market || ""}`;
+      const sourceDate = stock.priceAsOf || stock.quoteFetchedAt || state.latest.priceFetchedAt || stock.asOf || state.latest.asOf || state.latest.generatedAt || "latest.json";
+      const status = stock.marketStatus ? ` · ${stock.marketStatus}` : "";
+      const freshness = stock.hasRealtimePrice === true
+        ? "Naver 최신 체결가"
+        : stock.hasMarketData === false
+          ? "상장정보만 있음"
+          : "실시간 조회 실패";
+      $("selectedSource").textContent = `${stock.market || "시장"} · ${freshness}${status}`;
+      $("dataStamp").textContent = `${formatDataDate(sourceDate)} · ${stock.market || ""}${status}`;
       calculate();
     }
 
@@ -1979,6 +1992,18 @@
       const date = new Date(value);
       if (Number.isNaN(date.getTime())) return value;
       return new Intl.DateTimeFormat("ko-KR", { dateStyle: "medium", timeStyle: "short" }).format(date);
+    }
+
+    function formatQuoteDate(value) {
+      if (!value) return "";
+      if (/^[A-Za-z]+ \d{1,2}, \d{4}$/.test(String(value))) return value;
+      return formatDataDate(value);
+    }
+
+    function realtimeText(value) {
+      if (value === true) return "실시간";
+      if (value === false) return "지연/최종";
+      return "";
     }
 
     function saveCase() {
