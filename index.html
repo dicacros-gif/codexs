@@ -3026,13 +3026,13 @@
       }
       $("stockPicker").value = stock.code;
       const sourceDate = stock.priceAsOf || stock.quoteFetchedAt || state.latest.priceFetchedAt || stock.asOf || state.latest.asOf || state.latest.generatedAt || "latest.json";
+      const sourceParts = [stock.market || "시장"];
+      if (stock.hasRealtimePrice !== true) {
+        sourceParts.push(stock.hasMarketData === false ? "상장정보만 있음" : "실시간 조회 실패");
+      }
+      if (stock.marketStatus) sourceParts.push(stock.marketStatus);
       const status = stock.marketStatus ? ` · ${stock.marketStatus}` : "";
-      const freshness = stock.hasRealtimePrice === true
-        ? "Naver 종가"
-        : stock.hasMarketData === false
-          ? "상장정보만 있음"
-          : "실시간 조회 실패";
-      $("selectedSource").textContent = `${stock.market || "시장"} · ${freshness}${status}`;
+      $("selectedSource").textContent = sourceParts.join(" · ");
       $("dataStamp").textContent = `${formatDataDate(sourceDate)} · ${stock.market || ""}${status}`;
       calculate();
     }
