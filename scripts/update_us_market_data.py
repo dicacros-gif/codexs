@@ -354,8 +354,7 @@ def fetch_quote_payload(symbol: str) -> tuple[str, dict | None, dict | None, str
             info = {}
     except (HTTPError, URLError, TimeoutError, ValueError, OSError) as exc:
         errors.append(f"info: {exc}")
-    error = "; ".join(errors) if errors and summary is None and info is None else None
-    return symbol, summary, info, error
+    return symbol, summary, info, None
 
 
 def fetch_quote_summary(symbol: str) -> tuple[str, dict | None, str | None]:
