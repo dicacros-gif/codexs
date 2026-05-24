@@ -108,10 +108,18 @@ def parse_quarter_finance(payload: dict) -> dict | None:
         return None
 
     actual_titles.sort(key=lambda item: item["key"])
+    consensus_titles = [item for item in titles if item.get("isConsensus") == "Y" and item.get("key")]
+    consensus_titles.sort(key=lambda item: item["key"])
     latest = actual_titles[-1]
     latest_key = latest["key"]
+    previous_quarter = actual_titles[-2] if len(actual_titles) >= 2 else None
+    previous_quarter_key = previous_quarter.get("key") if previous_quarter else None
     prior_key = f"{int(latest_key[:4]) - 1}{latest_key[4:]}"
     prior = next((item for item in actual_titles if item.get("key") == prior_key), None)
+    forecast = next((item for item in consensus_titles if item.get("key", "") > latest_key), consensus_titles[0] if consensus_titles else None)
+    forecast_key = forecast.get("key") if forecast else None
+    forecast_prior_year_key = f"{int(forecast_key[:4]) - 1}{forecast_key[4:]}" if forecast_key else None
+    forecast_prior = next((item for item in actual_titles if item.get("key") == forecast_prior_year_key), None)
 
     row_map = {strip_html(row.get("title", "")): row.get("columns", {}) for row in rows}
 
@@ -121,39 +129,101 @@ def parse_quarter_finance(payload: dict) -> dict | None:
         value = row_map.get(row_title, {}).get(key, {}).get("value")
         return parse_int(value)
 
-    def metric(row_title: str) -> tuple[int | None, int | None, float | None, bool | None]:
+    def metric(row_title: str) -> dict:
         current = column_value(row_title, latest_key)
         prior_value = column_value(row_title, prior_key)
-        yoy = current / prior_value - 1 if current is not None and prior_value not in (None, 0) else None
+        previous_value = column_value(row_title, previous_quarter_key)
+        forecast_value = column_value(row_title, forecast_key)
+        forecast_prior_value = column_value(row_title, forecast_prior_year_key)
+        yoy = growth_rate(current, prior_value)
+        qoq = growth_rate(current, previous_value)
+        forecast_yoy = growth_rate(forecast_value, forecast_prior_value)
+        forecast_qoq = growth_rate(forecast_value, current)
         increased = yoy > 0 if yoy is not None else None
-        return current, prior_value, yoy, increased
+        return {
+            "current": current,
+            "prior_year": prior_value,
+            "previous_quarter": previous_value,
+            "yoy": yoy,
+            "qoq": qoq,
+            "increased": increased,
+            "qoq_increased": qoq > 0 if qoq is not None else None,
+            "forecast": forecast_value,
+            "forecast_prior_year": forecast_prior_value,
+            "forecast_yoy": forecast_yoy,
+            "forecast_qoq": forecast_qoq,
+            "forecast_increased": forecast_yoy > 0 if forecast_yoy is not None else None,
+            "forecast_qoq_increased": forecast_qoq > 0 if forecast_qoq is not None else None,
+        }
 
-    revenue, revenue_prior, revenue_yoy, revenue_increased = metric("매출액")
-    operating_income, operating_income_prior, operating_income_yoy, operating_income_increased = metric("영업이익")
-    net_income, net_income_prior, net_income_yoy, net_income_increased = metric("당기순이익")
-    controlling_income, controlling_income_prior, controlling_income_yoy, controlling_income_increased = metric("지배주주순이익")
+    revenue = metric("매출액")
+    operating_income = metric("영업이익")
+    net_income = metric("당기순이익")
+    controlling_income = metric("지배주주순이익")
 
     return {
         "latestQuarter": latest.get("title"),
         "latestQuarterKey": latest_key,
+        "previousQuarter": previous_quarter.get("title") if previous_quarter else None,
+        "previousQuarterKey": previous_quarter_key,
         "priorYearQuarter": prior.get("title") if prior else None,
         "priorYearQuarterKey": prior_key if prior else None,
-        "revenueEok": revenue,
-        "revenuePriorYearEok": revenue_prior,
-        "revenueYoY": revenue_yoy,
-        "revenueIncreased": revenue_increased,
-        "operatingIncomeEok": operating_income,
-        "operatingIncomePriorYearEok": operating_income_prior,
-        "operatingIncomeYoY": operating_income_yoy,
-        "operatingIncomeIncreased": operating_income_increased,
-        "netIncomeQuarterEok": net_income,
-        "netIncomePriorYearEok": net_income_prior,
-        "netIncomeYoY": net_income_yoy,
-        "netIncomeIncreased": net_income_increased,
-        "controllingNetIncomeQuarterEok": controlling_income,
-        "controllingNetIncomePriorYearEok": controlling_income_prior,
-        "controllingNetIncomeYoY": controlling_income_yoy,
-        "controllingNetIncomeIncreased": controlling_income_increased,
+        "forecastQuarter": forecast.get("title") if forecast else None,
+        "forecastQuarterKey": forecast_key,
+        "forecastPriorYearQuarter": forecast_prior.get("title") if forecast_prior else None,
+        "forecastPriorYearQuarterKey": forecast_prior_year_key if forecast_prior else None,
+        "revenueEok": revenue["current"],
+        "revenuePriorYearEok": revenue["prior_year"],
+        "revenuePreviousQuarterEok": revenue["previous_quarter"],
+        "revenueYoY": revenue["yoy"],
+        "revenueQoQ": revenue["qoq"],
+        "revenueIncreased": revenue["increased"],
+        "revenueQoQIncreased": revenue["qoq_increased"],
+        "forecastRevenueEok": revenue["forecast"],
+        "forecastRevenuePriorYearEok": revenue["forecast_prior_year"],
+        "forecastRevenueYoY": revenue["forecast_yoy"],
+        "forecastRevenueQoQ": revenue["forecast_qoq"],
+        "forecastRevenueIncreased": revenue["forecast_increased"],
+        "forecastRevenueQoQIncreased": revenue["forecast_qoq_increased"],
+        "operatingIncomeEok": operating_income["current"],
+        "operatingIncomePriorYearEok": operating_income["prior_year"],
+        "operatingIncomePreviousQuarterEok": operating_income["previous_quarter"],
+        "operatingIncomeYoY": operating_income["yoy"],
+        "operatingIncomeQoQ": operating_income["qoq"],
+        "operatingIncomeIncreased": operating_income["increased"],
+        "operatingIncomeQoQIncreased": operating_income["qoq_increased"],
+        "forecastOperatingIncomeEok": operating_income["forecast"],
+        "forecastOperatingIncomePriorYearEok": operating_income["forecast_prior_year"],
+        "forecastOperatingIncomeYoY": operating_income["forecast_yoy"],
+        "forecastOperatingIncomeQoQ": operating_income["forecast_qoq"],
+        "forecastOperatingIncomeIncreased": operating_income["forecast_increased"],
+        "forecastOperatingIncomeQoQIncreased": operating_income["forecast_qoq_increased"],
+        "netIncomeQuarterEok": net_income["current"],
+        "netIncomePriorYearEok": net_income["prior_year"],
+        "netIncomePreviousQuarterEok": net_income["previous_quarter"],
+        "netIncomeYoY": net_income["yoy"],
+        "netIncomeQoQ": net_income["qoq"],
+        "netIncomeIncreased": net_income["increased"],
+        "netIncomeQoQIncreased": net_income["qoq_increased"],
+        "forecastNetIncomeEok": net_income["forecast"],
+        "forecastNetIncomePriorYearEok": net_income["forecast_prior_year"],
+        "forecastNetIncomeYoY": net_income["forecast_yoy"],
+        "forecastNetIncomeQoQ": net_income["forecast_qoq"],
+        "forecastNetIncomeIncreased": net_income["forecast_increased"],
+        "forecastNetIncomeQoQIncreased": net_income["forecast_qoq_increased"],
+        "controllingNetIncomeQuarterEok": controlling_income["current"],
+        "controllingNetIncomePriorYearEok": controlling_income["prior_year"],
+        "controllingNetIncomePreviousQuarterEok": controlling_income["previous_quarter"],
+        "controllingNetIncomeYoY": controlling_income["yoy"],
+        "controllingNetIncomeQoQ": controlling_income["qoq"],
+        "controllingNetIncomeIncreased": controlling_income["increased"],
+        "controllingNetIncomeQoQIncreased": controlling_income["qoq_increased"],
+        "forecastControllingNetIncomeEok": controlling_income["forecast"],
+        "forecastControllingNetIncomePriorYearEok": controlling_income["forecast_prior_year"],
+        "forecastControllingNetIncomeYoY": controlling_income["forecast_yoy"],
+        "forecastControllingNetIncomeQoQ": controlling_income["forecast_qoq"],
+        "forecastControllingNetIncomeIncreased": controlling_income["forecast_increased"],
+        "forecastControllingNetIncomeQoQIncreased": controlling_income["forecast_qoq_increased"],
         "quarterFinanceSource": "Naver mobile stock finance/quarter",
     }
 
@@ -214,6 +284,12 @@ def ratio_or_none(numerator: float | None, denominator: float | None) -> float |
     if numerator is None or denominator is None or denominator <= 0:
         return None
     return numerator / denominator
+
+
+def growth_rate(current: float | None, previous: float | None) -> float | None:
+    if current is None or previous is None or previous == 0:
+        return None
+    return (current - previous) / abs(previous)
 
 
 def peg_or_none(pe: float | None, growth: float | None) -> float | None:

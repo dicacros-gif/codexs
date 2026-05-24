@@ -294,7 +294,7 @@
       max-height: calc(100vh - 285px);
     }
     .us-table {
-      min-width: 1120px;
+      min-width: 1560px;
     }
     .us-table tbody tr {
       cursor: pointer;
@@ -642,7 +642,7 @@
       max-height: 310px;
     }
     .peer-table {
-      min-width: 960px;
+      min-width: 1380px;
     }
     .peer-table tbody tr {
       cursor: pointer;
@@ -960,6 +960,12 @@
                     <th>ROE</th>
                     <th>PER</th>
                     <th>시가총액</th>
+                    <th>매출 YoY</th>
+                    <th>매출 QoQ</th>
+                    <th>순이익 YoY</th>
+                    <th>순이익 QoQ</th>
+                    <th>다음 매출 YoY</th>
+                    <th>다음 이익 YoY</th>
                     <th>거래량</th>
                   </tr>
                 </thead>
@@ -1157,7 +1163,11 @@
             <div><span>PER / Forward PER</span><strong id="usPer">-</strong></div>
             <div><span>PEG / Forward PEG</span><strong id="usPeg">-</strong></div>
             <div><span>매출 YoY</span><strong id="usRevenueYoY">-</strong></div>
+            <div><span>매출 QoQ</span><strong id="usRevenueQoQ">-</strong></div>
             <div><span>순이익 YoY</span><strong id="usNetIncomeYoY">-</strong></div>
+            <div><span>순이익 QoQ</span><strong id="usNetIncomeQoQ">-</strong></div>
+            <div><span>미래 매출 성장</span><strong id="usFutureRevenueGrowth">-</strong></div>
+            <div><span>미래 이익/EPS 성장</span><strong id="usFutureProfitGrowth">-</strong></div>
             <div><span>데이터 기준</span><strong id="usDataStamp">-</strong></div>
           </div>
         </article>
@@ -1183,7 +1193,11 @@
                   <th>Fwd PER</th>
                   <th>PEG</th>
                   <th>매출 YoY</th>
+                  <th>매출 QoQ</th>
                   <th>순이익 YoY</th>
+                  <th>순이익 QoQ</th>
+                  <th>미래 매출</th>
+                  <th>미래 이익/EPS</th>
                   <th>52주 위치</th>
                   <th>시가총액</th>
                   <th>거래량</th>
@@ -1569,7 +1583,7 @@
 
       if (!peers.length) {
         $("peerSummary").textContent = industry ? `${industry} · 비교 가능한 수치 없음` : "업종 정보 없음";
-        $("peerRows").innerHTML = `<tr><td colspan="11"><div class="peer-empty">동일 업종에서 비교 가능한 PER/ROE/시세 데이터가 없습니다.</div></td></tr>`;
+        $("peerRows").innerHTML = `<tr><td colspan="17"><div class="peer-empty">동일 업종에서 비교 가능한 PER/ROE/시세 데이터가 없습니다.</div></td></tr>`;
         return;
       }
 
@@ -1588,6 +1602,12 @@
           <td>${fmtPct(item.model.roe, 2)}</td>
           <td>${fmtRatio(stock.per, 2)}</td>
           <td>${fmtEok(stock.marketCapEok)}</td>
+          <td>${fmtGrowth(finiteNumber(stock.revenueYoY), stock.revenueIncreased)}</td>
+          <td>${fmtGrowth(finiteNumber(stock.revenueQoQ), stock.revenueQoQIncreased)}</td>
+          <td>${fmtGrowth(finiteNumber(stock.netIncomeYoY), stock.netIncomeIncreased)}</td>
+          <td>${fmtGrowth(finiteNumber(stock.netIncomeQoQ), stock.netIncomeQoQIncreased)}</td>
+          <td>${fmtGrowth(finiteNumber(stock.forecastRevenueYoY), stock.forecastRevenueIncreased)}</td>
+          <td>${fmtGrowth(finiteNumber(stock.forecastNetIncomeYoY), stock.forecastNetIncomeIncreased)}</td>
           <td>${Number.isFinite(finiteNumber(stock.volume)) ? Math.round(finiteNumber(stock.volume)).toLocaleString("ko-KR") : "-"}</td>
         </tr>`;
       }).join("");
@@ -1603,11 +1623,15 @@
         ["EPS", Number.isFinite(finiteNumber(stock.eps)) ? `${Math.round(finiteNumber(stock.eps)).toLocaleString("ko-KR")}원` : "-", stock.priceSource || "-"],
         ["추정 EPS", Number.isFinite(finiteNumber(stock.consensusEps)) ? `${Math.round(finiteNumber(stock.consensusEps)).toLocaleString("ko-KR")}원` : "-", "Naver consensus"],
         ["추정 EPS 성장률", fmtGrowth(finiteNumber(stock.forwardEpsGrowth)), "추정 EPS / EPS - 1"],
-        ["최근 분기", stock.latestQuarter || "-", stock.priorYearQuarter ? `전년 동기 ${stock.priorYearQuarter}` : "-"],
-        ["매출액", fmtEok(finiteNumber(stock.revenueEok)), `YoY ${fmtGrowth(finiteNumber(stock.revenueYoY), stock.revenueIncreased)}`],
-        ["영업이익", fmtEok(finiteNumber(stock.operatingIncomeEok)), `YoY ${fmtGrowth(finiteNumber(stock.operatingIncomeYoY), stock.operatingIncomeIncreased)}`],
-        ["당기순이익", fmtEok(finiteNumber(stock.netIncomeQuarterEok)), `YoY ${fmtGrowth(finiteNumber(stock.netIncomeYoY), stock.netIncomeIncreased)}`],
-        ["지배주주순이익", fmtEok(finiteNumber(stock.controllingNetIncomeQuarterEok)), `YoY ${fmtGrowth(finiteNumber(stock.controllingNetIncomeYoY), stock.controllingNetIncomeIncreased)}`],
+        ["최근 분기", stock.latestQuarter || "-", `${stock.priorYearQuarter ? `전년 동기 ${stock.priorYearQuarter}` : "-"} · ${stock.previousQuarter ? `전분기 ${stock.previousQuarter}` : "-"}`],
+        ["매출액", fmtEok(finiteNumber(stock.revenueEok)), `YoY ${fmtGrowth(finiteNumber(stock.revenueYoY), stock.revenueIncreased)} · QoQ ${fmtGrowth(finiteNumber(stock.revenueQoQ), stock.revenueQoQIncreased)}`],
+        ["영업이익", fmtEok(finiteNumber(stock.operatingIncomeEok)), `YoY ${fmtGrowth(finiteNumber(stock.operatingIncomeYoY), stock.operatingIncomeIncreased)} · QoQ ${fmtGrowth(finiteNumber(stock.operatingIncomeQoQ), stock.operatingIncomeQoQIncreased)}`],
+        ["당기순이익", fmtEok(finiteNumber(stock.netIncomeQuarterEok)), `YoY ${fmtGrowth(finiteNumber(stock.netIncomeYoY), stock.netIncomeIncreased)} · QoQ ${fmtGrowth(finiteNumber(stock.netIncomeQoQ), stock.netIncomeQoQIncreased)}`],
+        ["지배주주순이익", fmtEok(finiteNumber(stock.controllingNetIncomeQuarterEok)), `YoY ${fmtGrowth(finiteNumber(stock.controllingNetIncomeYoY), stock.controllingNetIncomeIncreased)} · QoQ ${fmtGrowth(finiteNumber(stock.controllingNetIncomeQoQ), stock.controllingNetIncomeQoQIncreased)}`],
+        ["예상 분기", stock.forecastQuarter || "-", `${stock.forecastPriorYearQuarter ? `전년 동기 ${stock.forecastPriorYearQuarter}` : "-"} · 최신 분기 ${stock.latestQuarter || "-"}`],
+        ["예상 매출액", fmtEok(finiteNumber(stock.forecastRevenueEok)), `YoY ${fmtGrowth(finiteNumber(stock.forecastRevenueYoY), stock.forecastRevenueIncreased)} · QoQ ${fmtGrowth(finiteNumber(stock.forecastRevenueQoQ), stock.forecastRevenueQoQIncreased)}`],
+        ["예상 영업이익", fmtEok(finiteNumber(stock.forecastOperatingIncomeEok)), `YoY ${fmtGrowth(finiteNumber(stock.forecastOperatingIncomeYoY), stock.forecastOperatingIncomeIncreased)} · QoQ ${fmtGrowth(finiteNumber(stock.forecastOperatingIncomeQoQ), stock.forecastOperatingIncomeQoQIncreased)}`],
+        ["예상 당기순이익", fmtEok(finiteNumber(stock.forecastNetIncomeEok)), `YoY ${fmtGrowth(finiteNumber(stock.forecastNetIncomeYoY), stock.forecastNetIncomeIncreased)} · QoQ ${fmtGrowth(finiteNumber(stock.forecastNetIncomeQoQ), stock.forecastNetIncomeQoQIncreased)}`],
         ["재무 데이터 출처", stock.quarterFinanceSource || "-", stock.hasQuarterFinance ? "분기 재무 크롤링 완료" : "분기 재무 없음"]
       ];
 
@@ -1827,7 +1851,11 @@
           <td>${fmtMultiple(finiteNumber(item.forwardPer))}</td>
           <td>${fmtMultiple(finiteNumber(item.peg))}</td>
           <td>${fmtGrowth(finiteNumber(item.revenueYoY), item.revenueIncreased)}</td>
+          <td>${fmtGrowth(finiteNumber(item.revenueQoQ), item.revenueQoQIncreased)}</td>
           <td>${fmtGrowth(finiteNumber(item.netIncomeYoY), item.netIncomeIncreased)}</td>
+          <td>${fmtGrowth(finiteNumber(item.netIncomeQoQ), item.netIncomeQoQIncreased)}</td>
+          <td>${fmtGrowth(finiteNumber(item.futureRevenueGrowth))}</td>
+          <td>${fmtGrowth(finiteNumber(item.futureProfitGrowth))}</td>
           <td>${format52w(item)}</td>
           <td>${fmtUsdCompact(finiteNumber(item.marketCap))}</td>
           <td>${fmtCount(finiteNumber(item.volume))}</td>
@@ -1840,11 +1868,11 @@
       $("usDataSummary").textContent = "미국 데이터 없음";
       $("usSelectedName").textContent = "데이터 없음";
       $("usSelectedMeta").textContent = "data/us_latest.json 확인";
-      ["usCurrentPrice", "usTargetPrice", "usTargetUpside", "usFairUpside", "usFairPrice", "usVerdict", "usPeerDelta", "us52w", "usMarketCap", "usVolume", "usPer", "usPeg", "usRevenueYoY", "usNetIncomeYoY", "usDataStamp"].forEach((id) => {
+      ["usCurrentPrice", "usTargetPrice", "usTargetUpside", "usFairUpside", "usFairPrice", "usVerdict", "usPeerDelta", "us52w", "usMarketCap", "usVolume", "usPer", "usPeg", "usRevenueYoY", "usRevenueQoQ", "usNetIncomeYoY", "usNetIncomeQoQ", "usFutureRevenueGrowth", "usFutureProfitGrowth", "usDataStamp"].forEach((id) => {
         $(id).textContent = "-";
       });
       $("usPeerSummary").textContent = "표시할 종목 없음";
-      $("usPeerRows").innerHTML = `<tr><td colspan="17">미국 종목 데이터를 불러오지 못했습니다.</td></tr>`;
+      $("usPeerRows").innerHTML = `<tr><td colspan="21">미국 종목 데이터를 불러오지 못했습니다.</td></tr>`;
     }
 
     function usQuoteStamp(stock) {
@@ -1883,7 +1911,11 @@
       $("usPer").textContent = `${fmtMultiple(finiteNumber(selected.per))} / ${fmtMultiple(finiteNumber(selected.forwardPer))}`;
       $("usPeg").textContent = `${fmtMultiple(finiteNumber(selected.peg))} / ${fmtMultiple(finiteNumber(selected.forwardPeg))}`;
       $("usRevenueYoY").textContent = `${fmtGrowth(finiteNumber(selected.revenueYoY), selected.revenueIncreased)}${Number.isFinite(finiteNumber(selected.revenueQuarterMillions)) ? ` · ${fmtUsdMillions(finiteNumber(selected.revenueQuarterMillions))}` : ""}`;
+      $("usRevenueQoQ").textContent = `${fmtGrowth(finiteNumber(selected.revenueQoQ), selected.revenueQoQIncreased)}${Number.isFinite(finiteNumber(selected.revenuePreviousQuarterMillions)) ? ` · 전분기 ${fmtUsdMillions(finiteNumber(selected.revenuePreviousQuarterMillions))}` : ""}`;
       $("usNetIncomeYoY").textContent = `${fmtGrowth(finiteNumber(selected.netIncomeYoY), selected.netIncomeIncreased)}${Number.isFinite(finiteNumber(selected.netIncomeQuarterMillions)) ? ` · ${fmtUsdMillions(finiteNumber(selected.netIncomeQuarterMillions))}` : ""}`;
+      $("usNetIncomeQoQ").textContent = `${fmtGrowth(finiteNumber(selected.netIncomeQoQ), selected.netIncomeQoQIncreased)}${Number.isFinite(finiteNumber(selected.netIncomePreviousQuarterMillions)) ? ` · 전분기 ${fmtUsdMillions(finiteNumber(selected.netIncomePreviousQuarterMillions))}` : ""}`;
+      $("usFutureRevenueGrowth").textContent = `${fmtGrowth(finiteNumber(selected.futureRevenueGrowth))} · 5Y 전망`;
+      $("usFutureProfitGrowth").textContent = `${fmtGrowth(finiteNumber(selected.futureProfitGrowth))} · ${escapeHtml(selected.futureProfitGrowthMetric || "EPS Growth Forecast (5Y)")}`;
       $("usDataStamp").textContent = usQuoteStamp(selected);
       $("usTargetKpi").className = `kpi ${pctKind(valuation.targetUpside)}`;
       $("usFairKpi").className = `kpi ${pctKind(valuation.fairUpside)}`;

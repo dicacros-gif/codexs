@@ -114,6 +114,12 @@ def parse_percent(value: object) -> float | None:
     return number / 100 if number is not None else None
 
 
+def growth_rate(current: float | None, previous: float | None) -> float | None:
+    if current is None or previous is None or previous == 0:
+        return None
+    return (current - previous) / abs(previous)
+
+
 def parse_range(value: object) -> tuple[float | None, float | None]:
     text = strip_html(value)
     if "/" in text:
@@ -245,9 +251,14 @@ def parse_stockanalysis_fundamentals(symbol: str) -> dict | None:
     net_income_growth = extract_financial_row(financials_text, "netIncomeGrowth")
 
     revenue_millions = parse_number(revenue[0]) if revenue else None
+    revenue_previous_millions = parse_number(revenue[1]) if len(revenue) > 1 else None
     net_income_millions = parse_number(net_income[0]) if net_income else None
+    net_income_previous_millions = parse_number(net_income[1]) if len(net_income) > 1 else None
     revenue_yoy = parse_percent(revenue_growth[0]) if revenue_growth else None
     net_income_yoy = parse_percent(net_income_growth[0]) if net_income_growth else None
+    revenue_qoq = growth_rate(revenue_millions, revenue_previous_millions)
+    net_income_qoq = growth_rate(net_income_millions, net_income_previous_millions)
+    revenue_growth_5y = extract_stat_metric(stats_text, "revenue5y", percent=True)
     eps_growth_5y = extract_stat_metric(stats_text, "eps5y", percent=True)
     forward_pe = extract_stat_metric(stats_text, "peForward")
 
@@ -256,18 +267,27 @@ def parse_stockanalysis_fundamentals(symbol: str) -> dict | None:
         "forwardPer": forward_pe,
         "peg": extract_stat_metric(stats_text, "pegRatio"),
         "forwardPeg": forward_pe / (eps_growth_5y * 100) if forward_pe is not None and eps_growth_5y and eps_growth_5y > 0 else None,
-        "revenueGrowthForecast5Y": extract_stat_metric(stats_text, "revenue5y", percent=True),
+        "revenueGrowthForecast5Y": revenue_growth_5y,
         "epsGrowthForecast5Y": eps_growth_5y,
+        "futureRevenueGrowth": revenue_growth_5y,
+        "futureProfitGrowth": eps_growth_5y,
+        "futureProfitGrowthMetric": "EPS Growth Forecast (5Y)",
         "ttmRevenue": extract_stat_metric(stats_text, "revenue"),
         "ttmNetIncome": extract_stat_metric(stats_text, "netinc"),
         "ttmEps": extract_stat_metric(stats_text, "eps"),
         "latestQuarterDate": headers[0] if headers else None,
         "revenueQuarterMillions": revenue_millions,
+        "revenuePreviousQuarterMillions": revenue_previous_millions,
         "revenueYoY": revenue_yoy,
+        "revenueQoQ": revenue_qoq,
         "revenueIncreased": revenue_yoy > 0 if revenue_yoy is not None else None,
+        "revenueQoQIncreased": revenue_qoq > 0 if revenue_qoq is not None else None,
         "netIncomeQuarterMillions": net_income_millions,
+        "netIncomePreviousQuarterMillions": net_income_previous_millions,
         "netIncomeYoY": net_income_yoy,
+        "netIncomeQoQ": net_income_qoq,
         "netIncomeIncreased": net_income_yoy > 0 if net_income_yoy is not None else None,
+        "netIncomeQoQIncreased": net_income_qoq > 0 if net_income_qoq is not None else None,
         "fundamentalsSource": "StockAnalysis statistics and quarterly financials pages",
     }
 
