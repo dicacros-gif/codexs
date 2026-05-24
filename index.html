@@ -920,11 +920,48 @@
       color: #dbeafe;
       border-color: #1f2937;
     }
+    body.terminal-theme.terminal-dark table,
+    body.terminal-theme.terminal-dark .us-table,
+    body.terminal-theme.terminal-dark .peer-table,
+    body.terminal-theme.terminal-dark .rank-table {
+      background: #07111a;
+    }
     body.terminal-theme tbody tr:hover td {
       background: rgba(34, 197, 94, 0.08);
     }
+    body.terminal-theme.terminal-dark .us-table tbody tr:hover td,
+    body.terminal-theme.terminal-dark .peer-table tbody tr:hover td {
+      background: rgba(56, 189, 248, 0.14);
+      color: #f8fafc;
+    }
+    body.terminal-theme.terminal-dark .us-table tr.selected-peer td,
+    body.terminal-theme.terminal-dark .peer-table tr.selected-peer td {
+      background: #10251d;
+      border-color: rgba(34, 197, 94, 0.36);
+      color: #f8fafc;
+    }
+    body.terminal-theme.terminal-dark .us-table td:first-child,
+    body.terminal-theme.terminal-dark .peer-table td:nth-child(2) {
+      color: #67e8f9;
+      font-family: "Consolas", "Cascadia Mono", monospace;
+      font-weight: 950;
+    }
     body.terminal-theme .scenario-name {
       color: #f8fafc;
+    }
+    body.terminal-theme.terminal-dark .us-table td:first-child .scenario-name,
+    body.terminal-theme.terminal-dark .peer-table td:nth-child(3) .scenario-name {
+      color: #67e8f9;
+      text-shadow: 0 0 10px rgba(103, 232, 249, 0.22);
+    }
+    body.terminal-theme.terminal-dark .us-table tr.selected-peer .scenario-name,
+    body.terminal-theme.terminal-dark .peer-table tr.selected-peer .scenario-name {
+      color: #fbbf24;
+      text-shadow: 0 0 12px rgba(251, 191, 36, 0.28);
+    }
+    body.terminal-theme.terminal-dark .heat {
+      color: var(--heat-fg-dark, var(--heat-fg));
+      box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.12), 0 0 10px rgba(15, 23, 42, 0.3);
     }
     body.terminal-theme .kpi,
     body.terminal-theme .us-meta-grid div {
@@ -1996,10 +2033,12 @@
       const borderAlpha = 0.18 + magnitude * 0.78;
       if (value >= 0) {
         const fg = magnitude > 0.62 ? "#052e16" : magnitude > 0.25 ? "#064e3b" : "#166534";
-        return `--heat-bg: rgba(22, 163, 74, ${alpha.toFixed(3)}); --heat-border: rgba(21, 128, 61, ${borderAlpha.toFixed(3)}); --heat-fg: ${fg};`;
+        const darkFg = magnitude > 0.62 ? "#dcfce7" : magnitude > 0.25 ? "#bbf7d0" : "#86efac";
+        return `--heat-bg: rgba(22, 163, 74, ${alpha.toFixed(3)}); --heat-border: rgba(21, 128, 61, ${borderAlpha.toFixed(3)}); --heat-fg: ${fg}; --heat-fg-dark: ${darkFg};`;
       }
       const fg = magnitude > 0.62 ? "#450a0a" : magnitude > 0.25 ? "#7f1d1d" : "#991b1b";
-      return `--heat-bg: rgba(220, 38, 38, ${alpha.toFixed(3)}); --heat-border: rgba(185, 28, 28, ${borderAlpha.toFixed(3)}); --heat-fg: ${fg};`;
+      const darkFg = magnitude > 0.62 ? "#fee2e2" : magnitude > 0.25 ? "#fecaca" : "#fca5a5";
+      return `--heat-bg: rgba(220, 38, 38, ${alpha.toFixed(3)}); --heat-border: rgba(185, 28, 28, ${borderAlpha.toFixed(3)}); --heat-fg: ${fg}; --heat-fg-dark: ${darkFg};`;
     }
 
     function heatSpan(value, text, cap = 1) {
