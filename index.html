@@ -33,13 +33,21 @@
       color: var(--ink);
       line-height: 1.45;
       letter-spacing: 0;
+      overflow-x: hidden;
+      overflow-x: clip;
     }
     button, input, select { font: inherit; }
     button { cursor: pointer; }
     .app {
       min-height: 100vh;
       display: grid;
+      grid-template-columns: minmax(0, 1fr);
       grid-template-rows: auto 1fr;
+      overflow-x: hidden;
+      overflow-x: clip;
+    }
+    .app > * {
+      min-width: 0;
     }
     header {
       position: sticky;
