@@ -530,6 +530,10 @@
     .result-layout {
       display: grid;
       gap: 14px;
+      min-width: 0;
+    }
+    .result-layout > * {
+      min-width: 0;
     }
     .kpis {
       display: grid;
@@ -584,11 +588,15 @@
     }
     .scenario-wrap {
       padding: 0 14px 14px;
+      min-width: 0;
+      max-width: 100%;
+      overflow: hidden;
     }
     .table-wrap {
       overflow: auto;
       border: 1px solid var(--line);
       border-radius: 8px;
+      max-width: 100%;
     }
     table {
       width: 100%;
@@ -726,6 +734,8 @@
       border-radius: 8px;
       background: #fff;
       overflow: hidden;
+      min-width: 0;
+      max-width: 100%;
     }
     .peer-head {
       display: flex;
@@ -750,6 +760,7 @@
     .peer-table-wrap {
       overflow: auto;
       max-height: 310px;
+      max-width: 100%;
     }
     .peer-table {
       min-width: 1380px;
