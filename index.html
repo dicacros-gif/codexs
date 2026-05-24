@@ -3395,7 +3395,9 @@
       const usExchangeCounts = state.usLatest?.exchangeCounts || {};
       const usThemeCounts = usThemeCountsMap();
       const usFundamentals = usList.filter((stock) => stock.hasFundamentals === true).length;
-      const usFailures = (state.usLatest?.failures || []).length;
+      const usFailures = Number.isFinite(finiteNumber(state.usLatest?.failureCount))
+        ? finiteNumber(state.usLatest.failureCount)
+        : (state.usLatest?.failures || []).length;
       const topThemes = [...usThemeCounts.entries()].sort((a, b) => b[1] - a[1]).slice(0, 5);
       const topThemeNames = new Set(topThemes.map(([theme]) => theme));
       const featuredThemes = ["AI 반도체", "AI SW", "AI 인프라", "SW/SaaS", "전력망/전기장비", "광통신", "반도체"]
