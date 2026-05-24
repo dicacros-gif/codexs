@@ -1296,10 +1296,6 @@
     </header>
 
     <section class="terminal-tape" aria-label="크롤링 데이터 터미널 요약">
-      <div class="terminal-tape-head">
-        <span>CRAWL FEED / VALUATION MONITOR</span>
-        <span id="terminalTapeStamp">데이터 동기화 중</span>
-      </div>
       <div class="terminal-tape-grid" id="terminalTape"></div>
     </section>
 
@@ -3085,7 +3081,11 @@
       if (!value) return "수동";
       const date = new Date(value);
       if (Number.isNaN(date.getTime())) return value;
-      return new Intl.DateTimeFormat("ko-KR", { dateStyle: "medium", timeStyle: "short" }).format(date);
+      const month = date.getMonth() + 1;
+      const day = date.getDate();
+      const hour = String(date.getHours()).padStart(2, "0");
+      const minute = String(date.getMinutes()).padStart(2, "0");
+      return `${month}/${day} ${hour}:${minute}`;
     }
 
     function formatQuoteDate(value) {
@@ -3171,9 +3171,6 @@
       const isUsView = state.activeView === "us" || state.activeView === "usRanking";
       const chips = isUsView ? renderUsTerminalChips() : renderKrTerminalChips();
       $("terminalTape").innerHTML = chips.join("");
-      $("terminalTapeStamp").textContent = isUsView
-        ? `US ${formatDataDate(state.usLatest?.generatedAt)}`
-        : `KR ${formatDataDate(state.latest?.generatedAt)}`;
     }
 
     function handleTerminalAction(action) {
