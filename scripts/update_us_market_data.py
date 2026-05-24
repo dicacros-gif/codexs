@@ -6,6 +6,7 @@ import json
 import os
 import re
 import sys
+import time
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from pathlib import Path
 from statistics import median
@@ -20,12 +21,18 @@ SCREENER_URL = "https://api.nasdaq.com/api/screener/stocks?download=true"
 INFO_URL = "https://api.nasdaq.com/api/quote/{symbol}/info?assetclass=stocks"
 SUMMARY_URL = "https://api.nasdaq.com/api/quote/{symbol}/summary?assetclass=stocks"
 NASDAQ_STOCK_URL = "https://www.nasdaq.com/market-activity/stocks/{symbol}"
+STOCKANALYSIS_STATS_URL = "https://stockanalysis.com/stocks/{symbol}/statistics/"
+STOCKANALYSIS_FINANCIALS_URL = "https://stockanalysis.com/stocks/{symbol}/financials/?p=quarterly"
 
 HEADERS = {
     "User-Agent": USER_AGENT,
     "Accept": "application/json, text/plain, */*",
     "Origin": "https://www.nasdaq.com",
     "Referer": "https://www.nasdaq.com/",
+}
+STOCKANALYSIS_HEADERS = {
+    "User-Agent": USER_AGENT,
+    "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
 }
 
 EXCLUDED_NAME_PATTERNS = (
@@ -74,6 +81,12 @@ def fetch_json(url: str, timeout: int = 30) -> dict:
         return json.loads(response.read().decode("utf-8", "replace"))
 
 
+def fetch_text(url: str, timeout: int = 30, headers: dict[str, str] | None = None) -> str:
+    request = Request(url, headers=headers or HEADERS)
+    with urlopen(request, timeout=timeout) as response:
+        return response.read().decode("utf-8", "replace")
+
+
 def strip_html(value: object) -> str:
     text = html.unescape(str(value or ""))
     text = re.sub(r"<[^>]*>", " ", text)
@@ -94,6 +107,11 @@ def parse_number(value: object) -> float | None:
         return float(match.group(0))
     except ValueError:
         return None
+
+
+def parse_percent(value: object) -> float | None:
+    number = parse_number(value)
+    return number / 100 if number is not None else None
 
 
 def parse_range(value: object) -> tuple[float | None, float | None]:
@@ -171,6 +189,94 @@ def fetch_quote_payload(symbol: str) -> tuple[str, dict | None, dict | None, str
 def fetch_quote_summary(symbol: str) -> tuple[str, dict | None, str | None]:
     symbol, summary, _info, error = fetch_quote_payload(symbol)
     return symbol, summary, error
+
+
+def stockanalysis_slug(symbol: str) -> str:
+    return symbol.lower().replace(".", "-")
+
+
+def extract_stat_metric(text: str, metric_id: str, percent: bool = False) -> float | None:
+    match = re.search(r'\{id:"' + re.escape(metric_id) + r'"[^}]*\}', text)
+    if not match:
+        return None
+    item = match.group(0)
+    hover = re.search(r'hover:"([^"]*)"', item)
+    value = re.search(r'value:"([^"]*)"', item)
+    raw = hover.group(1) if hover else value.group(1) if value else None
+    return parse_percent(raw) if percent else parse_number(raw)
+
+
+def extract_financial_headers(text: str) -> list[str]:
+    table = re.search(r'<table id="main-table"[\s\S]*?</table>', text)
+    if not table:
+        return []
+    return re.findall(r'<th id="(\d{4}-\d{2}-\d{2})"', table.group(0))
+
+
+def clean_cell(value: str) -> str:
+    text = re.sub(r"<[^>]*>", " ", value)
+    text = html.unescape(text)
+    return re.sub(r"\s+", " ", text).strip()
+
+
+def extract_financial_row(text: str, row_id: str) -> list[str]:
+    marker = f'id="{row_id}"'
+    marker_index = text.find(marker)
+    if marker_index < 0:
+        return []
+    row_start = text.rfind("<tr", 0, marker_index)
+    row_end = text.find("</tr>", marker_index)
+    if row_start < 0 or row_end < 0:
+        return []
+    row = text[row_start:row_end + 5]
+    cells = re.findall(r"<td[^>]*>([\s\S]*?)</td>", row)
+    return [clean_cell(cell) for cell in cells[1:]]
+
+
+def parse_stockanalysis_fundamentals(symbol: str) -> dict | None:
+    slug = stockanalysis_slug(symbol)
+    stats_text = fetch_text(STOCKANALYSIS_STATS_URL.format(symbol=slug), timeout=25, headers=STOCKANALYSIS_HEADERS)
+    financials_text = fetch_text(STOCKANALYSIS_FINANCIALS_URL.format(symbol=slug), timeout=25, headers=STOCKANALYSIS_HEADERS)
+
+    headers = extract_financial_headers(financials_text)
+    revenue = extract_financial_row(financials_text, "revenue")
+    revenue_growth = extract_financial_row(financials_text, "revenueGrowth")
+    net_income = extract_financial_row(financials_text, "netIncome")
+    net_income_growth = extract_financial_row(financials_text, "netIncomeGrowth")
+
+    revenue_millions = parse_number(revenue[0]) if revenue else None
+    net_income_millions = parse_number(net_income[0]) if net_income else None
+    revenue_yoy = parse_percent(revenue_growth[0]) if revenue_growth else None
+    net_income_yoy = parse_percent(net_income_growth[0]) if net_income_growth else None
+    eps_growth_5y = extract_stat_metric(stats_text, "eps5y", percent=True)
+    forward_pe = extract_stat_metric(stats_text, "peForward")
+
+    return {
+        "per": extract_stat_metric(stats_text, "pe"),
+        "forwardPer": forward_pe,
+        "peg": extract_stat_metric(stats_text, "pegRatio"),
+        "forwardPeg": forward_pe / (eps_growth_5y * 100) if forward_pe is not None and eps_growth_5y and eps_growth_5y > 0 else None,
+        "revenueGrowthForecast5Y": extract_stat_metric(stats_text, "revenue5y", percent=True),
+        "epsGrowthForecast5Y": eps_growth_5y,
+        "ttmRevenue": extract_stat_metric(stats_text, "revenue"),
+        "ttmNetIncome": extract_stat_metric(stats_text, "netinc"),
+        "ttmEps": extract_stat_metric(stats_text, "eps"),
+        "latestQuarterDate": headers[0] if headers else None,
+        "revenueQuarterMillions": revenue_millions,
+        "revenueYoY": revenue_yoy,
+        "revenueIncreased": revenue_yoy > 0 if revenue_yoy is not None else None,
+        "netIncomeQuarterMillions": net_income_millions,
+        "netIncomeYoY": net_income_yoy,
+        "netIncomeIncreased": net_income_yoy > 0 if net_income_yoy is not None else None,
+        "fundamentalsSource": "StockAnalysis statistics and quarterly financials pages",
+    }
+
+
+def fetch_stockanalysis_fundamentals(symbol: str) -> tuple[str, dict | None, str | None]:
+    try:
+        return symbol, parse_stockanalysis_fundamentals(symbol), None
+    except (HTTPError, URLError, TimeoutError, ValueError, OSError) as exc:
+        return symbol, None, str(exc)
 
 
 def median_or_none(values: list[float]) -> float | None:
@@ -291,6 +397,8 @@ def main() -> int:
     min_market_cap = env_int("US_MIN_MARKET_CAP", 1_000_000_000)
     max_stocks = env_int("US_MAX_STOCKS", 1000)
     workers = max(1, min(env_int("US_SUMMARY_WORKERS", 8), 16))
+    fundamental_workers = max(1, min(env_int("US_FUNDAMENTAL_WORKERS", 8), 12))
+    fundamental_max_stocks = env_int("US_FUNDAMENTAL_MAX_STOCKS", max_stocks)
     failures: list[dict] = []
 
     try:
@@ -324,7 +432,29 @@ def main() -> int:
                 if index % 100 == 0:
                     print(f"quote fetched: {index}/{len(bases)}")
 
-    stocks = [merge_quote(stock, summaries.get(stock["symbol"]), infos.get(stock["symbol"])) for stock in bases]
+    fundamentals: dict[str, dict | None] = {}
+    fundamental_bases = bases[:fundamental_max_stocks] if fundamental_max_stocks > 0 else []
+    if fundamental_bases:
+        with ThreadPoolExecutor(max_workers=fundamental_workers) as executor:
+            future_map = {executor.submit(fetch_stockanalysis_fundamentals, stock["symbol"]): stock["symbol"] for stock in fundamental_bases}
+            for index, future in enumerate(as_completed(future_map), start=1):
+                symbol, fundamental, error = future.result()
+                fundamentals[symbol] = fundamental
+                if error:
+                    failures.append({"source": f"StockAnalysis fundamentals {symbol}", "error": error})
+                if index % 100 == 0:
+                    print(f"fundamentals fetched: {index}/{len(fundamental_bases)}")
+
+    stocks = []
+    for stock in bases:
+        merged = merge_quote(stock, summaries.get(stock["symbol"]), infos.get(stock["symbol"]))
+        fundamental = fundamentals.get(stock["symbol"])
+        if fundamental:
+            merged.update(fundamental)
+            merged["hasFundamentals"] = True
+        else:
+            merged["hasFundamentals"] = False
+        stocks.append(merged)
     if not stocks:
         stocks = previous.get("stocks", [])
 
@@ -344,6 +474,7 @@ def main() -> int:
             "country": "United States",
             "minimumMarketCap": min_market_cap,
             "maximumStocks": max_stocks,
+            "fundamentalMaximumStocks": fundamental_max_stocks,
             "excluded": "funds, ETFs, warrants, units, preferred shares, notes, SPAC-like acquisition companies",
         },
         "counts": counts,

@@ -7,6 +7,7 @@ import os
 import re
 import sys
 import time
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from pathlib import Path
 from urllib.error import URLError
 from urllib.parse import urlencode
@@ -18,6 +19,7 @@ LATEST = ROOT / "data" / "latest.json"
 USER_AGENT = "Mozilla/5.0 (compatible; srim-codexs-updater/2.0)"
 NAVER_MARKET_URL = "https://finance.naver.com/sise/sise_market_sum.naver"
 NAVER_REALTIME_URL = "https://polling.finance.naver.com/api/realtime"
+NAVER_FINANCE_QUARTER_URL = "https://m.stock.naver.com/api/stock/{code}/finance/quarter"
 KIND_CORP_URL = "https://kind.krx.co.kr/corpgeneral/corpList.do?method=download&searchType=13"
 MARKETS = {"KOSPI": "0", "KOSDAQ": "1"}
 REALTIME_CHUNK_SIZE = 80
@@ -88,6 +90,94 @@ def fetch_realtime_quotes(codes: list[str]) -> tuple[dict[str, dict], list[dict]
     return quotes, failures
 
 
+def fetch_quarter_finance(code: str) -> tuple[str, dict | None, str | None]:
+    try:
+        raw = fetch_bytes(NAVER_FINANCE_QUARTER_URL.format(code=code))
+        payload = json.loads(raw.decode("utf-8", "replace"))
+        return code, parse_quarter_finance(payload), None
+    except (URLError, TimeoutError, ValueError, OSError, json.JSONDecodeError) as exc:
+        return code, None, str(exc)
+
+
+def parse_quarter_finance(payload: dict) -> dict | None:
+    info = payload.get("financeInfo") or {}
+    titles = info.get("trTitleList", [])
+    rows = info.get("rowList", [])
+    actual_titles = [item for item in titles if item.get("isConsensus") == "N" and item.get("key")]
+    if not actual_titles:
+        return None
+
+    actual_titles.sort(key=lambda item: item["key"])
+    latest = actual_titles[-1]
+    latest_key = latest["key"]
+    prior_key = f"{int(latest_key[:4]) - 1}{latest_key[4:]}"
+    prior = next((item for item in actual_titles if item.get("key") == prior_key), None)
+
+    row_map = {strip_html(row.get("title", "")): row.get("columns", {}) for row in rows}
+
+    def column_value(row_title: str, key: str | None) -> int | None:
+        if not key:
+            return None
+        value = row_map.get(row_title, {}).get(key, {}).get("value")
+        return parse_int(value)
+
+    def metric(row_title: str) -> tuple[int | None, int | None, float | None, bool | None]:
+        current = column_value(row_title, latest_key)
+        prior_value = column_value(row_title, prior_key)
+        yoy = current / prior_value - 1 if current is not None and prior_value not in (None, 0) else None
+        increased = yoy > 0 if yoy is not None else None
+        return current, prior_value, yoy, increased
+
+    revenue, revenue_prior, revenue_yoy, revenue_increased = metric("매출액")
+    operating_income, operating_income_prior, operating_income_yoy, operating_income_increased = metric("영업이익")
+    net_income, net_income_prior, net_income_yoy, net_income_increased = metric("당기순이익")
+    controlling_income, controlling_income_prior, controlling_income_yoy, controlling_income_increased = metric("지배주주순이익")
+
+    return {
+        "latestQuarter": latest.get("title"),
+        "latestQuarterKey": latest_key,
+        "priorYearQuarter": prior.get("title") if prior else None,
+        "priorYearQuarterKey": prior_key if prior else None,
+        "revenueEok": revenue,
+        "revenuePriorYearEok": revenue_prior,
+        "revenueYoY": revenue_yoy,
+        "revenueIncreased": revenue_increased,
+        "operatingIncomeEok": operating_income,
+        "operatingIncomePriorYearEok": operating_income_prior,
+        "operatingIncomeYoY": operating_income_yoy,
+        "operatingIncomeIncreased": operating_income_increased,
+        "netIncomeQuarterEok": net_income,
+        "netIncomePriorYearEok": net_income_prior,
+        "netIncomeYoY": net_income_yoy,
+        "netIncomeIncreased": net_income_increased,
+        "controllingNetIncomeQuarterEok": controlling_income,
+        "controllingNetIncomePriorYearEok": controlling_income_prior,
+        "controllingNetIncomeYoY": controlling_income_yoy,
+        "controllingNetIncomeIncreased": controlling_income_increased,
+        "quarterFinanceSource": "Naver mobile stock finance/quarter",
+    }
+
+
+def fetch_quarter_finances(codes: list[str]) -> tuple[dict[str, dict], list[dict]]:
+    max_workers = max(1, min(env_int("KR_FINANCE_WORKERS", 8), 16))
+    max_stocks = env_int("KR_FINANCE_MAX_STOCKS", 0)
+    selected = codes[:max_stocks] if max_stocks > 0 else codes
+    finances: dict[str, dict] = {}
+    failures: list[dict] = []
+
+    with ThreadPoolExecutor(max_workers=max_workers) as executor:
+        future_map = {executor.submit(fetch_quarter_finance, code): code for code in selected}
+        for index, future in enumerate(as_completed(future_map), start=1):
+            code, finance, error = future.result()
+            if finance:
+                finances[code] = finance
+            elif error:
+                failures.append({"source": f"Naver quarter finance {code}", "error": error})
+            if index % 200 == 0:
+                print(f"quarter finance fetched: {index}/{len(selected)}")
+    return finances, failures
+
+
 def quote_number(quote: dict | None, key: str) -> float | None:
     if not quote:
         return None
@@ -118,6 +208,18 @@ def quote_roe_from_eps_bps(eps: float | None, bps: float | None) -> float | None
     if eps is None or bps is None or bps <= 0:
         return None
     return eps / bps
+
+
+def ratio_or_none(numerator: float | None, denominator: float | None) -> float | None:
+    if numerator is None or denominator is None or denominator <= 0:
+        return None
+    return numerator / denominator
+
+
+def peg_or_none(pe: float | None, growth: float | None) -> float | None:
+    if pe is None or growth is None or growth <= 0:
+        return None
+    return pe / (growth * 100)
 
 
 def fetch_kind_company_map() -> dict[str, dict]:
@@ -223,7 +325,10 @@ def apply_realtime_quote(stock: dict, quote: dict, fetched_at: str) -> dict:
     volume = quote_int(quote, "aq")
     eps = quote_number(quote, "eps")
     bps = quote_number(quote, "bps")
+    consensus_eps = quote_number(quote, "cnsEps")
     per = quote_per(current_price, eps)
+    forward_per = ratio_or_none(current_price, consensus_eps)
+    forward_eps_growth = consensus_eps / eps - 1 if consensus_eps is not None and eps not in (None, 0) else None
     roe_from_eps_bps = quote_roe_from_eps_bps(eps, bps)
     market_cap_eok = quote_market_cap_eok(current_price, shares)
 
@@ -251,10 +356,15 @@ def apply_realtime_quote(stock: dict, quote: dict, fetched_at: str) -> dict:
             "accumulatedTradeValue": quote_int(quote, "aa"),
             "eps": eps,
             "bps": bps,
-            "consensusEps": quote_number(quote, "cnsEps"),
+            "consensusEps": consensus_eps,
+            "forwardPer": forward_per,
+            "forwardEpsGrowth": forward_eps_growth,
+            "peg": peg_or_none(per, forward_eps_growth),
+            "forwardPeg": peg_or_none(forward_per, forward_eps_growth),
             "marketStatus": quote.get("ms"),
             "quoteFetchedAt": fetched_at,
             "priceSource": "Naver Finance realtime polling SERVICE_ITEM",
+            "valuationRatiosSource": "Naver realtime EPS and consensus EPS; PEG is derived from estimated EPS growth",
         }
     )
     return stock
@@ -265,6 +375,13 @@ def env_float(name: str, default: float) -> float:
     if value is None or value == "":
         return default
     return float(value)
+
+
+def env_int(name: str, default: int) -> int:
+    value = os.getenv(name)
+    if value is None or value == "":
+        return default
+    return int(value)
 
 
 def main() -> int:
@@ -324,6 +441,16 @@ def main() -> int:
                 stock["hasRealtimePrice"] = True
             else:
                 stock["hasRealtimePrice"] = False
+
+        quarter_finances, quarter_failures = fetch_quarter_finances([stock["code"] for stock in stocks if stock.get("code")])
+        failures.extend(quarter_failures[:100])
+        for stock in stocks:
+            finance = quarter_finances.get(stock.get("code"))
+            if finance:
+                stock.update(finance)
+                stock["hasQuarterFinance"] = True
+            else:
+                stock["hasQuarterFinance"] = False
 
     market_order = {"KOSPI": 0, "KOSDAQ": 1}
     stocks.sort(key=lambda item: (market_order.get(item.get("market", ""), 9), item.get("name", ""), item.get("code", "")))

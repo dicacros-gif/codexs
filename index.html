@@ -872,6 +872,7 @@
         <div class="tabs" role="tablist" aria-label="결과 보기">
           <button class="tab active" type="button" data-view="summary">시나리오</button>
           <button class="tab" type="button" data-view="peers">경쟁사 비교</button>
+          <button class="tab" type="button" data-view="quant">정량지표</button>
           <button class="tab" type="button" data-view="forecast">연도별 계산</button>
           <button class="tab" type="button" data-view="check">검토</button>
         </div>
@@ -946,6 +947,21 @@
                 </tr>
               </thead>
               <tbody id="forecastRows"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="scenario-wrap" data-pane="quant" hidden>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>지표</th>
+                  <th>값</th>
+                  <th>기준/설명</th>
+                </tr>
+              </thead>
+              <tbody id="quantRows"></tbody>
             </table>
           </div>
         </div>
@@ -1069,6 +1085,10 @@
             <div><span>52주 위치</span><strong id="us52w">-</strong></div>
             <div><span>시가총액</span><strong id="usMarketCap">-</strong></div>
             <div><span>거래량</span><strong id="usVolume">-</strong></div>
+            <div><span>PER / Forward PER</span><strong id="usPer">-</strong></div>
+            <div><span>PEG / Forward PEG</span><strong id="usPeg">-</strong></div>
+            <div><span>매출 YoY</span><strong id="usRevenueYoY">-</strong></div>
+            <div><span>순이익 YoY</span><strong id="usNetIncomeYoY">-</strong></div>
             <div><span>데이터 기준</span><strong id="usDataStamp">-</strong></div>
           </div>
         </article>
@@ -1090,6 +1110,11 @@
                   <th>추정 적정가</th>
                   <th>적정가 대비</th>
                   <th>경쟁사 대비</th>
+                  <th>PER</th>
+                  <th>Fwd PER</th>
+                  <th>PEG</th>
+                  <th>매출 YoY</th>
+                  <th>순이익 YoY</th>
                   <th>52주 위치</th>
                   <th>시가총액</th>
                   <th>거래량</th>
@@ -1222,6 +1247,11 @@
       return value.toFixed(digits);
     }
 
+    function fmtMultiple(value, digits = 2) {
+      if (!Number.isFinite(value)) return "-";
+      return `${value.toFixed(digits)}x`;
+    }
+
     function fmtUsd(value) {
       if (!Number.isFinite(value)) return "-";
       return new Intl.NumberFormat("en-US", {
@@ -1241,6 +1271,11 @@
       }).format(value);
     }
 
+    function fmtUsdMillions(value) {
+      if (!Number.isFinite(value)) return "-";
+      return fmtUsdCompact(value * 1000000);
+    }
+
     function fmtSignedPct(value, digits = 1) {
       if (!Number.isFinite(value)) return "-";
       const sign = value > 0 ? "+" : "";
@@ -1251,6 +1286,12 @@
       if (!Number.isFinite(value)) return "-";
       const sign = value > 0 ? "+" : "";
       return `${sign}${(value * 100).toFixed(digits)}%p`;
+    }
+
+    function fmtGrowth(value, increased = null) {
+      if (!Number.isFinite(value)) return "-";
+      const label = increased === true ? "상승" : increased === false ? "하락" : value >= 0 ? "상승" : "하락";
+      return `${fmtSignedPct(value)} · ${label}`;
     }
 
     function fmtCount(value) {
@@ -1483,6 +1524,31 @@
       }).join("");
     }
 
+    function renderQuantMetrics() {
+      const stock = state.selectedStock || {};
+      const rows = [
+        ["PER", fmtMultiple(finiteNumber(stock.per)), stock.valuationRatiosSource || "Naver EPS 기준"],
+        ["Forward PER", fmtMultiple(finiteNumber(stock.forwardPer)), "Naver consensus EPS 기준"],
+        ["PEG", fmtMultiple(finiteNumber(stock.peg)), "PER / 추정 EPS 성장률"],
+        ["Forward PEG", fmtMultiple(finiteNumber(stock.forwardPeg)), "Forward PER / 추정 EPS 성장률"],
+        ["EPS", Number.isFinite(finiteNumber(stock.eps)) ? `${Math.round(finiteNumber(stock.eps)).toLocaleString("ko-KR")}원` : "-", stock.priceSource || "-"],
+        ["추정 EPS", Number.isFinite(finiteNumber(stock.consensusEps)) ? `${Math.round(finiteNumber(stock.consensusEps)).toLocaleString("ko-KR")}원` : "-", "Naver consensus"],
+        ["추정 EPS 성장률", fmtGrowth(finiteNumber(stock.forwardEpsGrowth)), "추정 EPS / EPS - 1"],
+        ["최근 분기", stock.latestQuarter || "-", stock.priorYearQuarter ? `전년 동기 ${stock.priorYearQuarter}` : "-"],
+        ["매출액", fmtEok(finiteNumber(stock.revenueEok)), `YoY ${fmtGrowth(finiteNumber(stock.revenueYoY), stock.revenueIncreased)}`],
+        ["영업이익", fmtEok(finiteNumber(stock.operatingIncomeEok)), `YoY ${fmtGrowth(finiteNumber(stock.operatingIncomeYoY), stock.operatingIncomeIncreased)}`],
+        ["당기순이익", fmtEok(finiteNumber(stock.netIncomeQuarterEok)), `YoY ${fmtGrowth(finiteNumber(stock.netIncomeYoY), stock.netIncomeIncreased)}`],
+        ["지배주주순이익", fmtEok(finiteNumber(stock.controllingNetIncomeQuarterEok)), `YoY ${fmtGrowth(finiteNumber(stock.controllingNetIncomeYoY), stock.controllingNetIncomeIncreased)}`],
+        ["재무 데이터 출처", stock.quarterFinanceSource || "-", stock.hasQuarterFinance ? "분기 재무 크롤링 완료" : "분기 재무 없음"]
+      ];
+
+      $("quantRows").innerHTML = rows.map(([name, value, note]) => `<tr>
+        <td><span class="scenario-name">${escapeHtml(name)}</span></td>
+        <td>${escapeHtml(value)}</td>
+        <td>${escapeHtml(note)}</td>
+      </tr>`).join("");
+    }
+
     function renderRankings() {
       if (!state.rankings.length) state.rankings = buildRankings();
       const rows = state.rankings.filter((item) => state.rankMarket === "ALL" || item.stock.market === state.rankMarket);
@@ -1682,6 +1748,11 @@
           <td>${fmtUsd(rowValuation.fairPrice)}</td>
           <td><span class="pill ${fairKind}">${fmtSignedPct(rowValuation.fairUpside)}</span></td>
           <td><span class="pill ${deltaKind}">${fmtPctPoint(rowValuation.peerDelta)}</span></td>
+          <td>${fmtMultiple(finiteNumber(item.per))}</td>
+          <td>${fmtMultiple(finiteNumber(item.forwardPer))}</td>
+          <td>${fmtMultiple(finiteNumber(item.peg))}</td>
+          <td>${fmtGrowth(finiteNumber(item.revenueYoY), item.revenueIncreased)}</td>
+          <td>${fmtGrowth(finiteNumber(item.netIncomeYoY), item.netIncomeIncreased)}</td>
           <td>${format52w(item)}</td>
           <td>${fmtUsdCompact(finiteNumber(item.marketCap))}</td>
           <td>${fmtCount(finiteNumber(item.volume))}</td>
@@ -1694,11 +1765,11 @@
       $("usDataSummary").textContent = "미국 데이터 없음";
       $("usSelectedName").textContent = "데이터 없음";
       $("usSelectedMeta").textContent = "data/us_latest.json 확인";
-      ["usCurrentPrice", "usTargetPrice", "usTargetUpside", "usFairUpside", "usFairPrice", "usVerdict", "usPeerDelta", "us52w", "usMarketCap", "usVolume", "usDataStamp"].forEach((id) => {
+      ["usCurrentPrice", "usTargetPrice", "usTargetUpside", "usFairUpside", "usFairPrice", "usVerdict", "usPeerDelta", "us52w", "usMarketCap", "usVolume", "usPer", "usPeg", "usRevenueYoY", "usNetIncomeYoY", "usDataStamp"].forEach((id) => {
         $(id).textContent = "-";
       });
       $("usPeerSummary").textContent = "표시할 종목 없음";
-      $("usPeerRows").innerHTML = `<tr><td colspan="12">미국 종목 데이터를 불러오지 못했습니다.</td></tr>`;
+      $("usPeerRows").innerHTML = `<tr><td colspan="17">미국 종목 데이터를 불러오지 못했습니다.</td></tr>`;
     }
 
     function usQuoteStamp(stock) {
@@ -1734,6 +1805,10 @@
       $("us52w").textContent = format52w(selected);
       $("usMarketCap").textContent = fmtUsdCompact(finiteNumber(selected.marketCap));
       $("usVolume").textContent = fmtCount(finiteNumber(selected.volume));
+      $("usPer").textContent = `${fmtMultiple(finiteNumber(selected.per))} / ${fmtMultiple(finiteNumber(selected.forwardPer))}`;
+      $("usPeg").textContent = `${fmtMultiple(finiteNumber(selected.peg))} / ${fmtMultiple(finiteNumber(selected.forwardPeg))}`;
+      $("usRevenueYoY").textContent = `${fmtGrowth(finiteNumber(selected.revenueYoY), selected.revenueIncreased)}${Number.isFinite(finiteNumber(selected.revenueQuarterMillions)) ? ` · ${fmtUsdMillions(finiteNumber(selected.revenueQuarterMillions))}` : ""}`;
+      $("usNetIncomeYoY").textContent = `${fmtGrowth(finiteNumber(selected.netIncomeYoY), selected.netIncomeIncreased)}${Number.isFinite(finiteNumber(selected.netIncomeQuarterMillions)) ? ` · ${fmtUsdMillions(finiteNumber(selected.netIncomeQuarterMillions))}` : ""}`;
       $("usDataStamp").textContent = usQuoteStamp(selected);
       $("usTargetKpi").className = `kpi ${pctKind(valuation.targetUpside)}`;
       $("usFairKpi").className = `kpi ${pctKind(valuation.fairUpside)}`;
@@ -1808,6 +1883,7 @@
         `안전마진 ${fmtPct(model.marginOfSafety, 0)}, 분석일 조정 ${fmtRatio(model.dateAdjustmentYears)}년`
       ].map((text) => `<li>${text}</li>`).join("");
       renderPeerComparison(model, selected);
+      renderQuantMetrics();
 
       const checks = [];
       if (model.shareCount <= 0) checks.push(["bad", "유통 기준 주식수가 0 이하입니다."]);
