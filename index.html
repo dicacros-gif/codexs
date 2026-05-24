@@ -2961,6 +2961,7 @@
       populateStockPicker(preferredCode);
       const stock = stocksForMarket(market).find((item) => item.code === preferredCode) || filteredStocksForMarket()[0];
       if (stock) applyStock(stock);
+      renderTerminalTape();
     }
 
     function applyMarketDefaults() {
@@ -3065,14 +3066,49 @@
       return `<button class="terminal-chip ${tone}" type="button"${actionAttr}><span>${escapeHtml(label)}</span><strong>${escapeHtml(value)}</strong></button>`;
     }
 
-    function renderTerminalTape() {
+    function countBy(items, keyFn) {
+      const counts = new Map();
+      items.forEach((item) => {
+        const key = keyFn(item);
+        if (!key) return;
+        counts.set(key, (counts.get(key) || 0) + 1);
+      });
+      return counts;
+    }
+
+    function topCountEntries(counts, limit = 6) {
+      return [...counts.entries()]
+        .sort((a, b) => b[1] - a[1] || String(a[0]).localeCompare(String(b[0]), "ko-KR"))
+        .slice(0, limit);
+    }
+
+    function compactTerminalLabel(label, max = 16) {
+      const text = String(label || "");
+      return text.length > max ? `${text.slice(0, max - 1)}…` : text;
+    }
+
+    function renderKrTerminalChips() {
       const krStocks = state.latest?.stocks || [];
-      const usList = usStocks();
       const krCounts = state.latest?.counts || {};
-      const usExchangeCounts = state.usLatest?.exchangeCounts || {};
-      const usThemeCounts = state.usLatest?.themeCounts || {};
       const krRealtime = krStocks.filter((stock) => stock.hasRealtimePrice === true).length;
       const krQuarter = krStocks.filter((stock) => stock.hasQuarterFinance === true).length;
+      const industryScope = state.activeView === "calculator"
+        ? krStocks.filter((stock) => stock.market === state.activeMarket)
+        : krStocks;
+      const topIndustries = topCountEntries(countBy(industryScope, (stock) => stock.industry), 6);
+      return [
+        terminalChip("KOSPI", (krCounts.KOSPI || stocksForMarket("KOSPI").length || 0).toLocaleString("ko-KR"), "up", "krMarket:KOSPI"),
+        terminalChip("KOSDAQ", (krCounts.KOSDAQ || stocksForMarket("KOSDAQ").length || 0).toLocaleString("ko-KR"), "info", "krMarket:KOSDAQ"),
+        terminalChip("KR 종가", krRealtime.toLocaleString("ko-KR"), "up", "view:ranking"),
+        terminalChip("KR 분기", krQuarter.toLocaleString("ko-KR"), "warn", "view:calculator"),
+        ...topIndustries.map(([industry, count], index) => terminalChip(compactTerminalLabel(industry), count.toLocaleString("ko-KR"), index === 0 ? "hot" : "info", `krIndustry:${industry}`))
+      ];
+    }
+
+    function renderUsTerminalChips() {
+      const usList = usStocks();
+      const usExchangeCounts = state.usLatest?.exchangeCounts || {};
+      const usThemeCounts = state.usLatest?.themeCounts || {};
       const usFundamentals = usList.filter((stock) => stock.hasFundamentals === true).length;
       const usFailures = (state.usLatest?.failures || []).length;
       const topThemes = Object.entries(usThemeCounts).sort((a, b) => b[1] - a[1]).slice(0, 4);
@@ -3080,11 +3116,7 @@
       const featuredThemes = ["AI", "AI SW", "SW", "전력", "광통신"]
         .filter((theme) => usThemeCounts[theme] && !topThemeNames.has(theme))
         .map((theme) => [theme, usThemeCounts[theme]]);
-      const chips = [
-        terminalChip("KRX KOSPI", (krCounts.KOSPI || stocksForMarket("KOSPI").length || 0).toLocaleString("ko-KR"), "up", "krRank:rankKospiSection"),
-        terminalChip("KRX KOSDAQ", (krCounts.KOSDAQ || stocksForMarket("KOSDAQ").length || 0).toLocaleString("ko-KR"), "info", "krRank:rankKosdaqSection"),
-        terminalChip("KR RT PRICE", krRealtime.toLocaleString("ko-KR"), "up", "view:ranking"),
-        terminalChip("KR QUARTER", krQuarter.toLocaleString("ko-KR"), "warn", "view:calculator"),
+      return [
         terminalChip("US UNIVERSE", usList.length.toLocaleString("ko-KR"), "info", "view:us"),
         terminalChip("US TARGET", (state.usLatest?.targetCount || 0).toLocaleString("ko-KR"), "up", "view:usRanking"),
         terminalChip("NASDAQ", (usExchangeCounts.NASDAQ || 0).toLocaleString("ko-KR"), "info", "usExchange:NASDAQ"),
@@ -3094,15 +3126,41 @@
         ...topThemes.map(([theme, count], index) => terminalChip(theme, count.toLocaleString("ko-KR"), index === 0 ? "hot" : "warn", `usTheme:${theme}`)),
         ...featuredThemes.map(([theme, count]) => terminalChip(theme, count.toLocaleString("ko-KR"), "info", `usTheme:${theme}`))
       ];
+    }
+
+    function renderTerminalTape() {
+      const isUsView = state.activeView === "us" || state.activeView === "usRanking";
+      const chips = isUsView ? renderUsTerminalChips() : renderKrTerminalChips();
       $("terminalTape").innerHTML = chips.join("");
-      $("terminalTapeStamp").textContent = `KR ${formatDataDate(state.latest?.generatedAt)} / US ${formatDataDate(state.usLatest?.generatedAt)}`;
+      $("terminalTapeStamp").textContent = isUsView
+        ? `US ${formatDataDate(state.usLatest?.generatedAt)}`
+        : `KR ${formatDataDate(state.latest?.generatedAt)}`;
     }
 
     function handleTerminalAction(action) {
       if (!action) return;
-      const [type, value] = action.split(":");
+      const [type, ...parts] = action.split(":");
+      const value = parts.join(":");
       if (type === "view") {
         setTopView(value);
+        return;
+      }
+      if (type === "krMarket") {
+        setTopView("calculator");
+        setActiveMarket(value || "KOSPI");
+        renderTerminalTape();
+        return;
+      }
+      if (type === "krIndustry") {
+        const stock = (state.latest.stocks || []).find((item) => item.market === state.activeMarket && item.industry === value)
+          || (state.latest.stocks || []).find((item) => item.industry === value);
+        if (stock) {
+          state.activeMarket = stock.market || state.activeMarket;
+          $("stockSearch").value = value || "";
+          populateStockPicker(stock.code);
+          applyStock(stock);
+        }
+        setTopView("calculator");
         return;
       }
       if (type === "krRank") {
@@ -3188,6 +3246,7 @@
       if (view === "us") renderUsView();
       if (view === "usRanking") renderUsRanking();
       if (view !== "us" && view !== "usRanking") $("dataStatus").textContent = `기준값 ${formatDataDate(state.latest.generatedAt)}`;
+      renderTerminalTape();
     }
 
     function openRankedStock(code) {
