@@ -60,6 +60,27 @@ EXCLUDED_NAME_PATTERNS = (
     "warrants",
 )
 
+THEME_RULES: tuple[tuple[str, tuple[str, ...], tuple[str, ...]], ...] = (
+    ("AI", ("NVDA", "AMD", "AVGO", "MRVL", "MU", "SMCI", "DELL", "ARM"), ("artificial intelligence", " ai ", "accelerated computing", "gpu", "semiconductor", "chip", "data center")),
+    ("AI SW", ("PLTR", "AI", "SNOW", "DDOG", "MDB", "CRM", "NOW", "MSFT", "ORCL", "ADBE", "PATH"), ("ai software", "analytics", "data platform", "application software", "infrastructure software", "machine learning")),
+    ("SW", ("MSFT", "ORCL", "CRM", "ADBE", "NOW", "INTU", "ADSK", "TEAM", "WDAY"), ("software", "computer software", "prepackaged software", "saas", "cloud software")),
+    ("전력", ("VST", "CEG", "ETN", "GEV", "PWR", "VRT", "NRG", "BE", "FLNC", "GNRC"), ("electric utilities", "power", "electrical", "grid", "energy storage", "renewable", "generator")),
+    ("광통신", ("CIEN", "LITE", "COHR", "GLW", "AAOI", "COMM", "FN", "NOK"), ("optical", "photonics", "fiber", "fibre", "laser", "communications equipment", "networking products")),
+    ("반도체", ("NVDA", "AMD", "AVGO", "QCOM", "MU", "MRVL", "INTC", "TXN", "ADI", "AMAT", "LRCX", "KLAC", "ASML", "ON"), ("semiconductor", "semi", "chip", "integrated circuit")),
+    ("데이터센터", ("VRT", "EQIX", "DLR", "IRM", "AMT", "DELL", "SMCI", "ANET", "NTAP"), ("data center", "datacenter", "server", "storage", "networking products", "reit")),
+    ("클라우드", ("MSFT", "AMZN", "GOOGL", "ORCL", "SNOW", "NET", "DDOG", "MDB", "CRM"), ("cloud", "internet services", "data platform", "infrastructure software")),
+    ("사이버보안", ("PANW", "CRWD", "ZS", "FTNT", "OKTA", "NET", "CHKP", "S"), ("security", "cyber", "identity", "firewall")),
+    ("로봇/자동화", ("ISRG", "ROK", "TER", "SYM", "ZBRA", "HON", "EMR"), ("robot", "automation", "industrial machinery", "laboratory analytical instruments")),
+    ("전기차/배터리", ("TSLA", "RIVN", "LCID", "ALB", "F", "GM", "QS", "ENVX"), ("electric vehicle", "battery", "lithium", "auto manufacturing", "motor vehicles")),
+    ("원전/우라늄", ("CEG", "CCJ", "SMR", "NNE", "LEU", "BWXT"), ("nuclear", "uranium")),
+    ("바이오/제약", ("LLY", "JNJ", "MRK", "ABBV", "PFE", "AMGN", "GILD", "REGN"), ("biotechnology", "pharmaceutical", "medical", "drug")),
+    ("금융", ("JPM", "BAC", "WFC", "C", "GS", "MS", "V", "MA", "AXP"), ("banks", "investment bankers", "finance", "insurance", "payment")),
+    ("에너지", ("XOM", "CVX", "COP", "SLB", "EOG", "OXY", "LNG"), ("oil", "gas", "coal", "energy")),
+    ("리츠", ("PLD", "AMT", "EQIX", "DLR", "O", "SPG", "CCI"), ("real estate investment trusts", "reit")),
+    ("소비재", ("AMZN", "WMT", "COST", "HD", "MCD", "SBUX", "NKE", "TGT"), ("retail", "consumer", "restaurants", "apparel")),
+    ("산업재", ("CAT", "DE", "GE", "HON", "UNP", "RTX", "BA", "LMT"), ("industrial", "machinery", "aerospace", "railroads", "construction")),
+)
+
 
 def env_int(name: str, default: int) -> int:
     value = os.getenv(name)
@@ -212,6 +233,18 @@ def extract_stat_metric(text: str, metric_id: str, percent: bool = False) -> flo
     return parse_percent(raw) if percent else parse_number(raw)
 
 
+def extract_stat_text(text: str, metric_id: str) -> str | None:
+    match = re.search(r'\{id:"' + re.escape(metric_id) + r'"[^}]*\}', text)
+    if not match:
+        return None
+    item = match.group(0)
+    hover = re.search(r'hover:"([^"]*)"', item)
+    value = re.search(r'value:"([^"]*)"', item)
+    raw = hover.group(1) if hover else value.group(1) if value else None
+    cleaned = strip_html(raw)
+    return cleaned if cleaned and cleaned.lower() != "n/a" else None
+
+
 def extract_financial_headers(text: str) -> list[str]:
     table = re.search(r'<table id="main-table"[\s\S]*?</table>', text)
     if not table:
@@ -267,13 +300,60 @@ def parse_stockanalysis_fundamentals(symbol: str) -> dict | None:
         "forwardPer": forward_pe,
         "peg": extract_stat_metric(stats_text, "pegRatio"),
         "forwardPeg": forward_pe / (eps_growth_5y * 100) if forward_pe is not None and eps_growth_5y and eps_growth_5y > 0 else None,
+        "ps": extract_stat_metric(stats_text, "ps"),
+        "forwardPs": extract_stat_metric(stats_text, "psForward"),
+        "pb": extract_stat_metric(stats_text, "pb"),
+        "priceToFcf": extract_stat_metric(stats_text, "pfcf"),
+        "priceToOcf": extract_stat_metric(stats_text, "pocf"),
+        "evToSales": extract_stat_metric(stats_text, "evSales"),
+        "evToEbitda": extract_stat_metric(stats_text, "evEbitda"),
+        "evToEbit": extract_stat_metric(stats_text, "evEbit"),
+        "currentRatio": extract_stat_metric(stats_text, "currentRatio"),
+        "quickRatio": extract_stat_metric(stats_text, "quickRatio"),
+        "debtEquity": extract_stat_metric(stats_text, "debtEquity"),
+        "debtEbitda": extract_stat_metric(stats_text, "debtEbitda"),
+        "interestCoverage": extract_stat_metric(stats_text, "interestCoverage"),
+        "roe": extract_stat_metric(stats_text, "roe", percent=True),
+        "roa": extract_stat_metric(stats_text, "roa", percent=True),
+        "roic": extract_stat_metric(stats_text, "roic", percent=True),
+        "wacc": extract_stat_metric(stats_text, "wacc", percent=True),
+        "beta": extract_stat_metric(stats_text, "beta"),
+        "priceChange52w": extract_stat_metric(stats_text, "ch1y", percent=True),
+        "sma50": extract_stat_metric(stats_text, "sma50"),
+        "sma200": extract_stat_metric(stats_text, "sma200"),
+        "rsi": extract_stat_metric(stats_text, "rsi"),
+        "shortFloat": extract_stat_metric(stats_text, "shortFloat", percent=True),
+        "shortRatio": extract_stat_metric(stats_text, "shortRatio"),
+        "grossMargin": extract_stat_metric(stats_text, "grossMargin", percent=True),
+        "operatingMargin": extract_stat_metric(stats_text, "operatingMargin", percent=True),
+        "profitMargin": extract_stat_metric(stats_text, "profitMargin", percent=True),
+        "fcfMargin": extract_stat_metric(stats_text, "fcfMargin", percent=True),
+        "dividendYield": extract_stat_metric(stats_text, "dividendYield", percent=True),
+        "buybackYield": extract_stat_metric(stats_text, "buybackYield", percent=True),
+        "shareholderYield": extract_stat_metric(stats_text, "totalReturn", percent=True),
+        "earningsYield": extract_stat_metric(stats_text, "earningsYield", percent=True),
+        "fcfYield": extract_stat_metric(stats_text, "fcfYield", percent=True),
+        "stockanalysisPriceTarget": extract_stat_metric(stats_text, "priceTarget"),
+        "stockanalysisTargetUpside": extract_stat_metric(stats_text, "priceTargetChange", percent=True),
+        "analystConsensus": extract_stat_text(stats_text, "analystRatings"),
+        "analystCount": extract_stat_metric(stats_text, "analystCount"),
+        "piotroskiFScore": extract_stat_metric(stats_text, "fScore"),
+        "altmanZScore": extract_stat_metric(stats_text, "zScore"),
         "revenueGrowthForecast5Y": revenue_growth_5y,
         "epsGrowthForecast5Y": eps_growth_5y,
         "futureRevenueGrowth": revenue_growth_5y,
         "futureProfitGrowth": eps_growth_5y,
         "futureProfitGrowthMetric": "EPS Growth Forecast (5Y)",
         "ttmRevenue": extract_stat_metric(stats_text, "revenue"),
+        "ttmGrossProfit": extract_stat_metric(stats_text, "gp"),
+        "ttmOperatingIncome": extract_stat_metric(stats_text, "opinc"),
         "ttmNetIncome": extract_stat_metric(stats_text, "netinc"),
+        "ttmEbitda": extract_stat_metric(stats_text, "ebitda"),
+        "ttmFreeCashFlow": extract_stat_metric(stats_text, "fcf"),
+        "totalCash": extract_stat_metric(stats_text, "totalcash"),
+        "totalDebt": extract_stat_metric(stats_text, "debt"),
+        "netCash": extract_stat_metric(stats_text, "netcash"),
+        "bookValuePerShare": extract_stat_metric(stats_text, "bvps"),
         "ttmEps": extract_stat_metric(stats_text, "eps"),
         "latestQuarterDate": headers[0] if headers else None,
         "revenueQuarterMillions": revenue_millions,
@@ -313,6 +393,8 @@ def build_group_stats(stocks: list[dict]) -> dict[str, dict]:
         for key in (
             f"sector::{stock.get('sector', '')}",
             f"industry::{stock.get('sector', '')}::{stock.get('industry', '')}",
+            f"exchange::{stock.get('exchangeGroup', '')}",
+            f"theme::{stock.get('theme', '')}",
         ):
             groups.setdefault(key, []).append(float(upside))
 
@@ -338,6 +420,34 @@ def normalize_base_row(row: dict) -> dict:
         "volume": parse_number(row.get("volume")),
         "sourceUrl": NASDAQ_STOCK_URL.format(symbol=symbol.lower()),
     }
+
+
+def normalize_exchange(value: object) -> str:
+    text = strip_html(value).upper()
+    if "NASDAQ" in text:
+        return "NASDAQ"
+    if text == "NYSE" or "NEW YORK STOCK EXCHANGE" in text:
+        return "NYSE"
+    if "AMEX" in text or "NYSE AMERICAN" in text:
+        return "AMEX"
+    return text or "기타"
+
+
+def detect_theme_tags(stock: dict) -> list[str]:
+    symbol = strip_html(stock.get("symbol")).upper()
+    haystack = " ".join(
+        strip_html(stock.get(key)).lower()
+        for key in ("name", "sector", "industry")
+    )
+    padded = f" {haystack} "
+    tags: list[str] = []
+    for theme, symbols, keywords in THEME_RULES:
+        if symbol in symbols or any(keyword in padded for keyword in keywords):
+            tags.append(theme)
+    if not tags:
+        sector = strip_html(stock.get("sector")) or "기타"
+        tags.append(sector)
+    return tags
 
 
 def quote_price(info: dict | None, fallback: float | None) -> float | None:
@@ -472,16 +582,29 @@ def main() -> int:
         if fundamental:
             merged.update(fundamental)
             merged["hasFundamentals"] = True
+            if not isinstance(merged.get("targetPrice"), (int, float)) and isinstance(fundamental.get("stockanalysisPriceTarget"), (int, float)):
+                merged["targetPrice"] = fundamental["stockanalysisPriceTarget"]
+                price = merged.get("price")
+                merged["targetUpside"] = fundamental.get("stockanalysisTargetUpside") if isinstance(fundamental.get("stockanalysisTargetUpside"), (int, float)) else (merged["targetPrice"] / price - 1 if price else None)
         else:
             merged["hasFundamentals"] = False
+        merged["exchangeGroup"] = normalize_exchange(merged.get("exchange"))
+        merged["themeTags"] = detect_theme_tags(merged)
+        merged["theme"] = merged["themeTags"][0] if merged["themeTags"] else "기타"
         stocks.append(merged)
     if not stocks:
         stocks = previous.get("stocks", [])
 
     stocks.sort(key=lambda item: (item.get("sector", ""), item.get("industry", ""), -(item.get("marketCap") or 0)))
     counts: dict[str, int] = {}
+    exchange_counts: dict[str, int] = {}
+    theme_counts: dict[str, int] = {}
     for stock in stocks:
         counts[stock["sector"]] = counts.get(stock["sector"], 0) + 1
+        exchange = stock.get("exchangeGroup") or "기타"
+        exchange_counts[exchange] = exchange_counts.get(exchange, 0) + 1
+        for theme in stock.get("themeTags") or [stock.get("theme") or "기타"]:
+            theme_counts[theme] = theme_counts.get(theme, 0) + 1
 
     generated_at = dt.datetime.now(dt.timezone.utc).astimezone().isoformat(timespec="seconds")
     target_count = sum(1 for stock in stocks if isinstance(stock.get("targetPrice"), (int, float)))
@@ -498,6 +621,8 @@ def main() -> int:
             "excluded": "funds, ETFs, warrants, units, preferred shares, notes, SPAC-like acquisition companies",
         },
         "counts": counts,
+        "exchangeCounts": exchange_counts,
+        "themeCounts": theme_counts,
         "targetCount": target_count,
         "groupStats": build_group_stats(stocks),
         "stocks": stocks,

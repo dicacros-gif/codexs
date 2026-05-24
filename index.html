@@ -212,11 +212,26 @@
     }
     .us-toolbar {
       display: grid;
-      grid-template-columns: repeat(3, minmax(0, 1fr));
+      grid-template-columns: repeat(4, minmax(0, 1fr));
       gap: 10px;
       padding: 14px;
       border-bottom: 1px solid var(--line);
       background: #fbfcfd;
+    }
+    .us-rank-toolbar {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 220px 190px;
+      gap: 10px;
+      align-items: end;
+      padding: 14px;
+      border-bottom: 1px solid var(--line);
+      background: #fbfcfd;
+    }
+    .us-rank-toolbar .rank-filter {
+      align-self: end;
+    }
+    .us-rank-table {
+      min-width: 2120px;
     }
     .us-layout {
       display: grid;
@@ -294,7 +309,7 @@
       max-height: calc(100vh - 285px);
     }
     .us-table {
-      min-width: 1560px;
+      min-width: 1860px;
     }
     .us-table tbody tr {
       cursor: pointer;
@@ -733,6 +748,7 @@
       main { width: calc(100% - 12px); margin-top: 8px; }
       .rank-view { width: calc(100% - 12px); margin-top: 8px; }
       .us-toolbar { grid-template-columns: 1fr; }
+      .us-rank-toolbar { grid-template-columns: 1fr; }
       .us-layout { padding: 8px; }
       .us-method { margin: 0 8px 8px; }
       .field-grid, .rate-row, .analysis-grid { grid-template-columns: 1fr; }
@@ -756,6 +772,7 @@
           <button class="top-tab active" type="button" data-view-tab="calculator">계산기</button>
           <button class="top-tab" type="button" data-view-tab="ranking">저평가 순위</button>
           <button class="top-tab" type="button" data-view-tab="us">미국 주식</button>
+          <button class="top-tab" type="button" data-view-tab="usRanking">미국 주식 저평가</button>
         </nav>
         <div class="actions">
           <button class="btn ghost" type="button" id="loadLatest">최신값</button>
@@ -1113,7 +1130,10 @@
         <label>섹터
           <select id="usSectorSelect"></select>
         </label>
-        <label>업종/테마
+        <label>상세 테마
+          <select id="usThemeSelect"></select>
+        </label>
+        <label>업종
           <select id="usIndustrySelect"></select>
         </label>
         <label>종목
@@ -1162,12 +1182,19 @@
             <div><span>거래량</span><strong id="usVolume">-</strong></div>
             <div><span>PER / Forward PER</span><strong id="usPer">-</strong></div>
             <div><span>PEG / Forward PEG</span><strong id="usPeg">-</strong></div>
+            <div><span>P/S / Forward P/S</span><strong id="usPs">-</strong></div>
+            <div><span>P/B / P/FCF</span><strong id="usBalanceValuation">-</strong></div>
+            <div><span>EV/EBITDA</span><strong id="usEvEbitda">-</strong></div>
+            <div><span>ROE / ROIC</span><strong id="usReturns">-</strong></div>
+            <div><span>매출총/영업/순마진</span><strong id="usMargins">-</strong></div>
+            <div><span>부채/자본 · 유동비율</span><strong id="usDebtLiquidity">-</strong></div>
             <div><span>매출 YoY</span><strong id="usRevenueYoY">-</strong></div>
             <div><span>매출 QoQ</span><strong id="usRevenueQoQ">-</strong></div>
             <div><span>순이익 YoY</span><strong id="usNetIncomeYoY">-</strong></div>
             <div><span>순이익 QoQ</span><strong id="usNetIncomeQoQ">-</strong></div>
             <div><span>미래 매출 성장</span><strong id="usFutureRevenueGrowth">-</strong></div>
             <div><span>미래 이익/EPS 성장</span><strong id="usFutureProfitGrowth">-</strong></div>
+            <div><span>공매도/애널리스트</span><strong id="usShortAnalyst">-</strong></div>
             <div><span>데이터 기준</span><strong id="usDataStamp">-</strong></div>
           </div>
         </article>
@@ -1192,6 +1219,10 @@
                   <th>PER</th>
                   <th>Fwd PER</th>
                   <th>PEG</th>
+                  <th>P/S</th>
+                  <th>P/FCF</th>
+                  <th>ROE</th>
+                  <th>순마진</th>
                   <th>매출 YoY</th>
                   <th>매출 QoQ</th>
                   <th>순이익 YoY</th>
@@ -1201,7 +1232,7 @@
                   <th>52주 위치</th>
                   <th>시가총액</th>
                   <th>거래량</th>
-                  <th>업종/테마</th>
+                  <th>거래소/테마</th>
                 </tr>
               </thead>
               <tbody id="usPeerRows"></tbody>
@@ -1211,6 +1242,70 @@
       </div>
       <div class="us-method">
         현재가는 Nasdaq 종목별 quote info의 latest trade 값을 사용하며, 장이 닫혀 있거나 지연 시세인 경우 기준일과 상태를 함께 표시합니다. 추정 적정가는 애널리스트 1년 목표가와 같은 업종 경쟁사의 목표상승률 중간값을 함께 반영합니다.
+      </div>
+    </section>
+
+    <section class="panel rank-view us-rank-view" id="usRankView" hidden aria-labelledby="usRankTitle">
+      <div class="panel-head">
+        <h2 id="usRankTitle">미국 주식 저평가</h2>
+        <div class="meta" id="usRankSummary">미국 저평가 순위 계산 준비 중</div>
+      </div>
+      <div class="us-rank-toolbar">
+        <div class="rank-filter" id="usExchangeTabs" aria-label="거래소 선택"></div>
+        <label>상세 테마
+          <select id="usRankThemeSelect"></select>
+        </label>
+        <label>정렬
+          <select id="usRankSortSelect">
+            <option value="fairUpside">적정가 대비</option>
+            <option value="targetUpside">목표가 대비</option>
+            <option value="peerDelta">경쟁사 대비</option>
+            <option value="forwardPeg">Forward PEG 낮은순</option>
+          </select>
+        </label>
+      </div>
+      <div class="rank-table-wrap">
+        <table class="rank-table us-rank-table">
+          <thead>
+            <tr>
+              <th>순위</th>
+              <th>거래소</th>
+              <th>테마</th>
+              <th>티커</th>
+              <th>회사명</th>
+              <th>최신 체결가</th>
+              <th>1년 목표가</th>
+              <th>목표가 대비</th>
+              <th>추정 적정가</th>
+              <th>적정가 대비</th>
+              <th>경쟁사 대비</th>
+              <th>PER</th>
+              <th>Fwd PER</th>
+              <th>PEG</th>
+              <th>Fwd PEG</th>
+              <th>P/S</th>
+              <th>P/FCF</th>
+              <th>ROE</th>
+              <th>ROIC</th>
+              <th>순마진</th>
+              <th>매출 YoY</th>
+              <th>매출 QoQ</th>
+              <th>순이익 YoY</th>
+              <th>순이익 QoQ</th>
+              <th>미래 매출</th>
+              <th>미래 이익/EPS</th>
+              <th>부채/자본</th>
+              <th>애널리스트</th>
+              <th>52주 위치</th>
+              <th>시가총액</th>
+              <th>보기</th>
+            </tr>
+          </thead>
+          <tbody id="usRankRows"></tbody>
+        </table>
+      </div>
+      <div class="us-method">
+        순위는 현재가, 1년 목표가, 같은 상세 테마/업종 경쟁사의 목표상승률 중간값으로 계산합니다. PER, Forward PER, PEG, P/S, P/FCF, ROE, ROIC, 마진, 부채비율, 공매도, 애널리스트 컨센서스 등 공개 페이지에서 확인 가능한 정량 지표를 함께 표시하며, 수집처에 없는 값은 비워 둡니다.
       </div>
     </section>
   </div>
@@ -1256,6 +1351,8 @@
       generatedAt: null,
       source: "data/us_latest.json",
       counts: {},
+      exchangeCounts: {},
+      themeCounts: {},
       targetCount: 0,
       groupStats: {},
       stocks: []
@@ -1269,6 +1366,10 @@
       rankMarket: "ALL",
       usSector: "",
       usIndustry: "",
+      usTheme: "",
+      usRankExchange: "ALL",
+      usRankTheme: "",
+      usRankSort: "fairUpside",
       rankings: [],
       selectedStock: null,
       selectedUsStock: null,
@@ -1695,17 +1796,47 @@
         .sort((a, b) => (counts[b] || 0) - (counts[a] || 0) || a.localeCompare(b));
     }
 
+    function usThemeTags(stock) {
+      if (Array.isArray(stock.themeTags) && stock.themeTags.length) return stock.themeTags.filter(Boolean);
+      return [stock.theme || stock.sector || "기타"].filter(Boolean);
+    }
+
+    function usThemeList() {
+      const counts = state.usLatest?.themeCounts || {};
+      const map = new Map();
+      usStocks().forEach((stock) => {
+        usThemeTags(stock).forEach((theme) => map.set(theme, counts[theme] || ((map.get(theme) || 0) + 1)));
+      });
+      return [...map.keys()].sort((a, b) => (counts[b] || map.get(b) || 0) - (counts[a] || map.get(a) || 0) || a.localeCompare(b));
+    }
+
+    function usExchangeGroup(stock) {
+      const text = String(stock.exchangeGroup || stock.exchange || "").toUpperCase();
+      if (text.includes("NASDAQ")) return "NASDAQ";
+      if (text.includes("NYSE") && !text.includes("AMERICAN")) return "NYSE";
+      if (text.includes("AMEX") || text.includes("AMERICAN")) return "AMEX";
+      return text || "기타";
+    }
+
+    function usExchangeList() {
+      const counts = state.usLatest?.exchangeCounts || {};
+      const exchanges = [...new Set(usStocks().map(usExchangeGroup).filter(Boolean))];
+      const order = { NASDAQ: 0, NYSE: 1, AMEX: 2, 기타: 9 };
+      return exchanges.sort((a, b) => (order[a] ?? 5) - (order[b] ?? 5) || (counts[b] || 0) - (counts[a] || 0) || a.localeCompare(b));
+    }
+
     function usIndustryList(sector = state.usSector) {
       const counts = new Map();
       usStocks()
-        .filter((stock) => stock.sector === sector && stock.industry)
+        .filter((stock) => (!sector || stock.sector === sector) && (!state.usTheme || usThemeTags(stock).includes(state.usTheme)) && stock.industry)
         .forEach((stock) => counts.set(stock.industry, (counts.get(stock.industry) || 0) + 1));
       return [...counts.keys()].sort((a, b) => (counts.get(b) || 0) - (counts.get(a) || 0) || a.localeCompare(b));
     }
 
     function usCandidates() {
       return sortByMarketCap(usStocks().filter((stock) => {
-        if (stock.sector !== state.usSector) return false;
+        if (state.usSector && stock.sector !== state.usSector) return false;
+        if (state.usTheme && !usThemeTags(stock).includes(state.usTheme)) return false;
         if (state.usIndustry && stock.industry !== state.usIndustry) return false;
         return finiteNumber(stock.price) > 0;
       }));
@@ -1713,9 +1844,11 @@
 
     function groupMedianForUsStock(stock, scope = "industry") {
       const stats = state.usLatest?.groupStats || {};
-      const key = scope === "industry"
-        ? `industry::${stock.sector || ""}::${stock.industry || ""}`
-        : `sector::${stock.sector || ""}`;
+      const key = scope === "theme"
+        ? `theme::${stock.theme || usThemeTags(stock)[0] || ""}`
+        : scope === "industry"
+          ? `industry::${stock.sector || ""}::${stock.industry || ""}`
+          : `sector::${stock.sector || ""}`;
       return finiteNumber(stats[key]?.medianTargetUpside);
     }
 
@@ -1725,7 +1858,9 @@
 
     function usPeerPool(stock) {
       const priceReady = (item) => item.symbol !== stock.symbol && item.sector === stock.sector && finiteNumber(item.price) > 0;
-      let peers = usStocks().filter((item) => priceReady(item) && item.industry === stock.industry);
+      const tags = usThemeTags(stock);
+      let peers = usStocks().filter((item) => priceReady(item) && usThemeTags(item).some((theme) => tags.includes(theme)));
+      if (peers.length < 3) peers = usStocks().filter((item) => priceReady(item) && item.industry === stock.industry);
       if (peers.length < 3) peers = usStocks().filter(priceReady);
       return sortByMarketCap(peers);
     }
@@ -1733,6 +1868,8 @@
     function usPeerMedian(stock, peers = usPeerPool(stock)) {
       const fromPeers = targetUpsideMedian(peers);
       if (Number.isFinite(fromPeers)) return fromPeers;
+      const fromTheme = groupMedianForUsStock(stock, "theme");
+      if (Number.isFinite(fromTheme)) return fromTheme;
       const fromIndustry = groupMedianForUsStock(stock, "industry");
       if (Number.isFinite(fromIndustry)) return fromIndustry;
       const fromSector = groupMedianForUsStock(stock, "sector");
@@ -1791,22 +1928,37 @@
       const sectors = usSectorList();
       if (!sectors.length) {
         $("usSectorSelect").innerHTML = `<option value="">데이터 없음</option>`;
+        $("usThemeSelect").innerHTML = `<option value="">데이터 없음</option>`;
         $("usIndustrySelect").innerHTML = `<option value="">데이터 없음</option>`;
         $("usStockSelect").innerHTML = `<option value="">데이터 없음</option>`;
         return null;
       }
 
-      if (!state.usSector || !sectors.includes(state.usSector)) state.usSector = sectors[0];
-      $("usSectorSelect").innerHTML = sectors.map((sector) => {
+      if (state.usSector && !sectors.includes(state.usSector)) state.usSector = "";
+      $("usSectorSelect").innerHTML = [
+        `<option value="">전체 섹터</option>`,
+        ...sectors.map((sector) => {
         const count = state.usLatest.counts?.[sector] || usStocks().filter((stock) => stock.sector === sector).length;
         return `<option value="${escapeHtml(sector)}">${escapeHtml(sector)} (${count.toLocaleString("ko-KR")})</option>`;
-      }).join("");
+        })
+      ].join("");
       $("usSectorSelect").value = state.usSector;
+
+      const themes = usThemeList();
+      if (state.usTheme && !themes.includes(state.usTheme)) state.usTheme = "";
+      $("usThemeSelect").innerHTML = [
+        `<option value="">전체 상세 테마</option>`,
+        ...themes.map((theme) => {
+          const count = state.usLatest.themeCounts?.[theme] || usStocks().filter((stock) => usThemeTags(stock).includes(theme)).length;
+          return `<option value="${escapeHtml(theme)}">${escapeHtml(theme)} (${count.toLocaleString("ko-KR")})</option>`;
+        })
+      ].join("");
+      $("usThemeSelect").value = state.usTheme;
 
       const industries = usIndustryList();
       if (state.usIndustry && !industries.includes(state.usIndustry)) state.usIndustry = "";
       $("usIndustrySelect").innerHTML = [
-        `<option value="">섹터 전체</option>`,
+        `<option value="">업종 전체</option>`,
         ...industries.map((industry) => `<option value="${escapeHtml(industry)}">${escapeHtml(industry)}</option>`)
       ].join("");
       $("usIndustrySelect").value = state.usIndustry;
@@ -1850,6 +2002,10 @@
           <td>${fmtMultiple(finiteNumber(item.per))}</td>
           <td>${fmtMultiple(finiteNumber(item.forwardPer))}</td>
           <td>${fmtMultiple(finiteNumber(item.peg))}</td>
+          <td>${fmtMultiple(finiteNumber(item.ps))}</td>
+          <td>${fmtMultiple(finiteNumber(item.priceToFcf))}</td>
+          <td>${fmtPct(finiteNumber(item.roe))}</td>
+          <td>${fmtPct(finiteNumber(item.profitMargin))}</td>
           <td>${fmtGrowth(finiteNumber(item.revenueYoY), item.revenueIncreased)}</td>
           <td>${fmtGrowth(finiteNumber(item.revenueQoQ), item.revenueQoQIncreased)}</td>
           <td>${fmtGrowth(finiteNumber(item.netIncomeYoY), item.netIncomeIncreased)}</td>
@@ -1859,7 +2015,7 @@
           <td>${format52w(item)}</td>
           <td>${fmtUsdCompact(finiteNumber(item.marketCap))}</td>
           <td>${fmtCount(finiteNumber(item.volume))}</td>
-          <td title="${escapeHtml(item.industry || "")}">${escapeHtml(item.industry || "")}</td>
+          <td title="${escapeHtml(`${item.industry || ""} · ${usThemeTags(item).join(", ")}`)}">${escapeHtml(`${usExchangeGroup(item)} · ${usThemeTags(item)[0] || item.industry || ""}`)}</td>
         </tr>`;
       }).join("");
     }
@@ -1868,11 +2024,11 @@
       $("usDataSummary").textContent = "미국 데이터 없음";
       $("usSelectedName").textContent = "데이터 없음";
       $("usSelectedMeta").textContent = "data/us_latest.json 확인";
-      ["usCurrentPrice", "usTargetPrice", "usTargetUpside", "usFairUpside", "usFairPrice", "usVerdict", "usPeerDelta", "us52w", "usMarketCap", "usVolume", "usPer", "usPeg", "usRevenueYoY", "usRevenueQoQ", "usNetIncomeYoY", "usNetIncomeQoQ", "usFutureRevenueGrowth", "usFutureProfitGrowth", "usDataStamp"].forEach((id) => {
+      ["usCurrentPrice", "usTargetPrice", "usTargetUpside", "usFairUpside", "usFairPrice", "usVerdict", "usPeerDelta", "us52w", "usMarketCap", "usVolume", "usPer", "usPeg", "usPs", "usBalanceValuation", "usEvEbitda", "usReturns", "usMargins", "usDebtLiquidity", "usRevenueYoY", "usRevenueQoQ", "usNetIncomeYoY", "usNetIncomeQoQ", "usFutureRevenueGrowth", "usFutureProfitGrowth", "usShortAnalyst", "usDataStamp"].forEach((id) => {
         $(id).textContent = "-";
       });
       $("usPeerSummary").textContent = "표시할 종목 없음";
-      $("usPeerRows").innerHTML = `<tr><td colspan="21">미국 종목 데이터를 불러오지 못했습니다.</td></tr>`;
+      $("usPeerRows").innerHTML = `<tr><td colspan="25">미국 종목 데이터를 불러오지 못했습니다.</td></tr>`;
     }
 
     function usQuoteStamp(stock) {
@@ -1897,7 +2053,7 @@
 
       $("usDataSummary").textContent = `${total.toLocaleString("ko-KR")}개 · ${sectors.toLocaleString("ko-KR")}개 섹터 · 목표가 ${targetCount.toLocaleString("ko-KR")}개`;
       $("usSelectedName").textContent = `${selected.symbol} · ${selected.name || selected.symbol}`;
-      $("usSelectedMeta").textContent = `${selected.sector || "-"} · ${selected.industry || "-"} · ${usQuoteStamp(selected)}`;
+      $("usSelectedMeta").textContent = `${usExchangeGroup(selected)} · ${usThemeTags(selected).slice(0, 2).join(", ") || "-"} · ${selected.industry || "-"} · ${usQuoteStamp(selected)}`;
       $("usCurrentPrice").textContent = fmtUsd(valuation.price);
       $("usTargetPrice").textContent = fmtUsd(valuation.targetPrice);
       $("usTargetUpside").textContent = fmtSignedPct(valuation.targetUpside);
@@ -1910,18 +2066,149 @@
       $("usVolume").textContent = fmtCount(finiteNumber(selected.volume));
       $("usPer").textContent = `${fmtMultiple(finiteNumber(selected.per))} / ${fmtMultiple(finiteNumber(selected.forwardPer))}`;
       $("usPeg").textContent = `${fmtMultiple(finiteNumber(selected.peg))} / ${fmtMultiple(finiteNumber(selected.forwardPeg))}`;
+      $("usPs").textContent = `${fmtMultiple(finiteNumber(selected.ps))} / ${fmtMultiple(finiteNumber(selected.forwardPs))}`;
+      $("usBalanceValuation").textContent = `${fmtMultiple(finiteNumber(selected.pb))} / ${fmtMultiple(finiteNumber(selected.priceToFcf))}`;
+      $("usEvEbitda").textContent = fmtMultiple(finiteNumber(selected.evToEbitda));
+      $("usReturns").textContent = `${fmtPct(finiteNumber(selected.roe))} / ${fmtPct(finiteNumber(selected.roic))}`;
+      $("usMargins").textContent = `${fmtPct(finiteNumber(selected.grossMargin))} / ${fmtPct(finiteNumber(selected.operatingMargin))} / ${fmtPct(finiteNumber(selected.profitMargin))}`;
+      $("usDebtLiquidity").textContent = `${fmtRatio(finiteNumber(selected.debtEquity), 2)} / ${fmtRatio(finiteNumber(selected.currentRatio), 2)}`;
       $("usRevenueYoY").textContent = `${fmtGrowth(finiteNumber(selected.revenueYoY), selected.revenueIncreased)}${Number.isFinite(finiteNumber(selected.revenueQuarterMillions)) ? ` · ${fmtUsdMillions(finiteNumber(selected.revenueQuarterMillions))}` : ""}`;
       $("usRevenueQoQ").textContent = `${fmtGrowth(finiteNumber(selected.revenueQoQ), selected.revenueQoQIncreased)}${Number.isFinite(finiteNumber(selected.revenuePreviousQuarterMillions)) ? ` · 전분기 ${fmtUsdMillions(finiteNumber(selected.revenuePreviousQuarterMillions))}` : ""}`;
       $("usNetIncomeYoY").textContent = `${fmtGrowth(finiteNumber(selected.netIncomeYoY), selected.netIncomeIncreased)}${Number.isFinite(finiteNumber(selected.netIncomeQuarterMillions)) ? ` · ${fmtUsdMillions(finiteNumber(selected.netIncomeQuarterMillions))}` : ""}`;
       $("usNetIncomeQoQ").textContent = `${fmtGrowth(finiteNumber(selected.netIncomeQoQ), selected.netIncomeQoQIncreased)}${Number.isFinite(finiteNumber(selected.netIncomePreviousQuarterMillions)) ? ` · 전분기 ${fmtUsdMillions(finiteNumber(selected.netIncomePreviousQuarterMillions))}` : ""}`;
       $("usFutureRevenueGrowth").textContent = `${fmtGrowth(finiteNumber(selected.futureRevenueGrowth))} · 5Y 전망`;
       $("usFutureProfitGrowth").textContent = `${fmtGrowth(finiteNumber(selected.futureProfitGrowth))} · ${escapeHtml(selected.futureProfitGrowthMetric || "EPS Growth Forecast (5Y)")}`;
+      $("usShortAnalyst").textContent = `${fmtPct(finiteNumber(selected.shortFloat))} short float · ${selected.analystConsensus || "-"}${Number.isFinite(finiteNumber(selected.analystCount)) ? ` (${Math.round(finiteNumber(selected.analystCount)).toLocaleString("ko-KR")})` : ""}`;
       $("usDataStamp").textContent = usQuoteStamp(selected);
       $("usTargetKpi").className = `kpi ${pctKind(valuation.targetUpside)}`;
       $("usFairKpi").className = `kpi ${pctKind(valuation.fairUpside)}`;
       $("usVerdictKpi").className = `kpi ${verdict.kind}`;
       if (state.activeView === "us") $("dataStatus").textContent = `미국 기준 ${formatDataDate(state.usLatest.generatedAt)}`;
       renderUsPeers(selected, valuation);
+    }
+
+    function usRankingCandidates() {
+      return usStocks().filter((stock) => {
+        if (state.usRankExchange !== "ALL" && usExchangeGroup(stock) !== state.usRankExchange) return false;
+        if (state.usRankTheme && !usThemeTags(stock).includes(state.usRankTheme)) return false;
+        return finiteNumber(stock.price) > 0;
+      });
+    }
+
+    function buildUsRankingRows() {
+      const rows = usRankingCandidates()
+        .map((stock) => {
+          const valuation = computeUsValuation(stock);
+          const fairUpside = finiteNumber(valuation.fairUpside);
+          const targetUpside = finiteNumber(valuation.targetUpside);
+          if (!Number.isFinite(fairUpside) && !Number.isFinite(targetUpside)) return null;
+          return { stock, valuation };
+        })
+        .filter(Boolean);
+
+      const sortKey = state.usRankSort || "fairUpside";
+      rows.sort((a, b) => {
+        if (sortKey === "forwardPeg") {
+          const av = finiteNumber(a.stock.forwardPeg);
+          const bv = finiteNumber(b.stock.forwardPeg);
+          if (Number.isFinite(av) && Number.isFinite(bv)) return av - bv;
+          if (Number.isFinite(av)) return -1;
+          if (Number.isFinite(bv)) return 1;
+          return finiteNumber(b.stock.marketCap) - finiteNumber(a.stock.marketCap);
+        }
+        const av = finiteNumber(a.valuation[sortKey]);
+        const bv = finiteNumber(b.valuation[sortKey]);
+        if (Number.isFinite(av) && Number.isFinite(bv)) return bv - av;
+        if (Number.isFinite(av)) return -1;
+        if (Number.isFinite(bv)) return 1;
+        return finiteNumber(b.stock.marketCap) - finiteNumber(a.stock.marketCap);
+      });
+      return rows;
+    }
+
+    function renderUsRankControls() {
+      const exchanges = usExchangeList();
+      const exchangeCounts = state.usLatest?.exchangeCounts || {};
+      if (state.usRankExchange !== "ALL" && !exchanges.includes(state.usRankExchange)) state.usRankExchange = "ALL";
+      const buttons = [
+        { key: "ALL", label: "전체", count: usStocks().length },
+        ...exchanges.map((exchange) => ({
+          key: exchange,
+          label: exchange,
+          count: exchangeCounts[exchange] || usStocks().filter((stock) => usExchangeGroup(stock) === exchange).length
+        }))
+      ];
+      $("usExchangeTabs").innerHTML = buttons.map((item) => `<button type="button" data-us-exchange="${escapeHtml(item.key)}" class="${item.key === state.usRankExchange ? "active" : ""}">${escapeHtml(item.label)} <small>${item.count.toLocaleString("ko-KR")}</small></button>`).join("");
+
+      const themes = usThemeList();
+      if (state.usRankTheme && !themes.includes(state.usRankTheme)) state.usRankTheme = "";
+      $("usRankThemeSelect").innerHTML = [
+        `<option value="">전체 상세 테마</option>`,
+        ...themes.map((theme) => {
+          const count = state.usLatest.themeCounts?.[theme] || usStocks().filter((stock) => usThemeTags(stock).includes(theme)).length;
+          return `<option value="${escapeHtml(theme)}">${escapeHtml(theme)} (${count.toLocaleString("ko-KR")})</option>`;
+        })
+      ].join("");
+      $("usRankThemeSelect").value = state.usRankTheme;
+      $("usRankSortSelect").value = state.usRankSort || "fairUpside";
+    }
+
+    function renderUsRanking() {
+      renderUsRankControls();
+      const rows = buildUsRankingRows();
+      const visible = rows.slice(0, 100);
+      const total = usStocks().length;
+      const exchangeText = state.usRankExchange === "ALL" ? "전체 거래소" : state.usRankExchange;
+      const themeText = state.usRankTheme || "전체 상세 테마";
+      $("usRankSummary").textContent = `${total.toLocaleString("ko-KR")}개 중 ${rows.length.toLocaleString("ko-KR")}개 계산 가능 · ${exchangeText} · ${themeText}`;
+
+      if (!visible.length) {
+        $("usRankRows").innerHTML = `<tr><td colspan="31">조건에 맞는 미국 저평가 종목이 없습니다.</td></tr>`;
+        return;
+      }
+
+      $("usRankRows").innerHTML = visible.map((item, index) => {
+        const stock = item.stock;
+        const valuation = item.valuation;
+        const targetKind = pctKind(valuation.targetUpside);
+        const fairKind = pctKind(valuation.fairUpside);
+        const deltaKind = pctKind(valuation.peerDelta);
+        return `<tr data-us-rank-symbol="${escapeHtml(stock.symbol)}">
+          <td>${(index + 1).toLocaleString("ko-KR")}</td>
+          <td>${escapeHtml(usExchangeGroup(stock))}</td>
+          <td>${escapeHtml(usThemeTags(stock)[0] || "-")}</td>
+          <td><span class="scenario-name">${escapeHtml(stock.symbol)}</span></td>
+          <td>${escapeHtml(stock.name || stock.symbol)}</td>
+          <td>${fmtUsd(valuation.price)}</td>
+          <td>${fmtUsd(valuation.targetPrice)}</td>
+          <td><span class="pill ${targetKind}">${fmtSignedPct(valuation.targetUpside)}</span></td>
+          <td>${fmtUsd(valuation.fairPrice)}</td>
+          <td><span class="pill ${fairKind}">${fmtSignedPct(valuation.fairUpside)}</span></td>
+          <td><span class="pill ${deltaKind}">${fmtPctPoint(valuation.peerDelta)}</span></td>
+          <td>${fmtMultiple(finiteNumber(stock.per))}</td>
+          <td>${fmtMultiple(finiteNumber(stock.forwardPer))}</td>
+          <td>${fmtMultiple(finiteNumber(stock.peg))}</td>
+          <td>${fmtMultiple(finiteNumber(stock.forwardPeg))}</td>
+          <td>${fmtMultiple(finiteNumber(stock.ps))}</td>
+          <td>${fmtMultiple(finiteNumber(stock.priceToFcf))}</td>
+          <td>${fmtPct(finiteNumber(stock.roe))}</td>
+          <td>${fmtPct(finiteNumber(stock.roic))}</td>
+          <td>${fmtPct(finiteNumber(stock.profitMargin))}</td>
+          <td>${fmtGrowth(finiteNumber(stock.revenueYoY), stock.revenueIncreased)}</td>
+          <td>${fmtGrowth(finiteNumber(stock.revenueQoQ), stock.revenueQoQIncreased)}</td>
+          <td>${fmtGrowth(finiteNumber(stock.netIncomeYoY), stock.netIncomeIncreased)}</td>
+          <td>${fmtGrowth(finiteNumber(stock.netIncomeQoQ), stock.netIncomeQoQIncreased)}</td>
+          <td>${fmtGrowth(finiteNumber(stock.futureRevenueGrowth))}</td>
+          <td>${fmtGrowth(finiteNumber(stock.futureProfitGrowth))}</td>
+          <td>${fmtRatio(finiteNumber(stock.debtEquity), 2)}</td>
+          <td>${escapeHtml(stock.analystConsensus || "-")}${Number.isFinite(finiteNumber(stock.analystCount)) ? ` (${Math.round(finiteNumber(stock.analystCount)).toLocaleString("ko-KR")})` : ""}</td>
+          <td>${format52w(stock)}</td>
+          <td>${fmtUsdCompact(finiteNumber(stock.marketCap))}</td>
+          <td><button class="rank-view-btn" type="button" data-us-rank-symbol="${escapeHtml(stock.symbol)}">보기</button></td>
+        </tr>`;
+      }).join("");
+
+      if (state.activeView === "usRanking") $("dataStatus").textContent = `미국 기준 ${formatDataDate(state.usLatest.generatedAt)}`;
     }
 
     function calculate() {
@@ -2168,6 +2455,7 @@
         state.usLatest = DEFAULT_US_DATA;
       }
       if (state.activeView === "us") renderUsView();
+      if (state.activeView === "usRanking") renderUsRanking();
     }
 
     function formatDataDate(value) {
@@ -2229,6 +2517,10 @@
         rankMarket: "ALL",
         usSector: "",
         usIndustry: "",
+        usTheme: "",
+        usRankExchange: "ALL",
+        usRankTheme: "",
+        usRankSort: "fairUpside",
         rankings: [],
         selectedStock: null,
         selectedUsStock: null,
@@ -2242,12 +2534,14 @@
       $("calculatorView").hidden = view !== "calculator";
       $("rankView").hidden = view !== "ranking";
       $("usView").hidden = view !== "us";
+      $("usRankView").hidden = view !== "usRanking";
       document.querySelectorAll("[data-view-tab]").forEach((tab) => {
         tab.classList.toggle("active", tab.dataset.viewTab === view);
       });
       if (view === "ranking") renderRankings();
       if (view === "us") renderUsView();
-      if (view !== "us") $("dataStatus").textContent = `기준값 ${formatDataDate(state.latest.generatedAt)}`;
+      if (view === "usRanking") renderUsRanking();
+      if (view !== "us" && view !== "usRanking") $("dataStatus").textContent = `기준값 ${formatDataDate(state.latest.generatedAt)}`;
     }
 
     function openRankedStock(code) {
@@ -2258,6 +2552,18 @@
       populateStockPicker(stock.code);
       applyStock(stock);
       setTopView("calculator");
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }
+
+    function openUsRankedStock(symbol) {
+      const stock = usStocks().find((item) => item.symbol === symbol);
+      if (!stock) return;
+      state.usSector = stock.sector || "";
+      state.usTheme = usThemeTags(stock)[0] || "";
+      state.usIndustry = stock.industry || "";
+      state.selectedUsStock = stock;
+      setTopView("us");
+      renderUsView(stock.symbol);
       window.scrollTo({ top: 0, behavior: "smooth" });
     }
 
@@ -2283,17 +2589,23 @@
         const stock = usStocks().find((item) => item.symbol === target.dataset.usSymbol);
         if (!stock) return;
         state.usSector = stock.sector || state.usSector;
+        state.usTheme = usThemeTags(stock)[0] || state.usTheme;
         state.usIndustry = stock.industry || state.usIndustry;
         state.selectedUsStock = stock;
         renderUsView(stock.symbol);
         window.scrollTo({ top: 0, behavior: "smooth" });
       });
+      $("usRankRows").addEventListener("click", (event) => {
+        const target = event.target.closest("[data-us-rank-symbol]");
+        if (target) openUsRankedStock(target.dataset.usRankSymbol);
+      });
       $("calculateNow").addEventListener("click", () => {
         if (state.activeView === "us") renderUsView();
+        else if (state.activeView === "usRanking") renderUsRanking();
         else calculate();
       });
       $("loadLatest").addEventListener("click", () => {
-        if (state.activeView === "us") {
+        if (state.activeView === "us" || state.activeView === "usRanking") {
           loadUsData();
           return;
         }
@@ -2319,6 +2631,12 @@
         state.selectedUsStock = null;
         renderUsView();
       });
+      $("usThemeSelect").addEventListener("change", (event) => {
+        state.usTheme = event.target.value;
+        state.usIndustry = "";
+        state.selectedUsStock = null;
+        renderUsView();
+      });
       $("usIndustrySelect").addEventListener("change", (event) => {
         state.usIndustry = event.target.value;
         state.selectedUsStock = null;
@@ -2329,8 +2647,23 @@
         if (!stock) return;
         state.selectedUsStock = stock;
         state.usSector = stock.sector || state.usSector;
+        state.usTheme = state.usTheme || usThemeTags(stock)[0] || "";
         state.usIndustry = state.usIndustry || stock.industry || "";
         renderUsView(stock.symbol);
+      });
+      $("usExchangeTabs").addEventListener("click", (event) => {
+        const target = event.target.closest("[data-us-exchange]");
+        if (!target) return;
+        state.usRankExchange = target.dataset.usExchange;
+        renderUsRanking();
+      });
+      $("usRankThemeSelect").addEventListener("change", (event) => {
+        state.usRankTheme = event.target.value;
+        renderUsRanking();
+      });
+      $("usRankSortSelect").addEventListener("change", (event) => {
+        state.usRankSort = event.target.value;
+        renderUsRanking();
       });
       document.querySelectorAll(".tab").forEach((tab) => {
         tab.addEventListener("click", () => {

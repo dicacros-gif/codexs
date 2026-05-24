@@ -13,6 +13,7 @@
 - 화면에서는 KOSPI/KOSDAQ 탭과 검색 입력으로 종목을 선택합니다.
 - 저평가 순위 탭은 KOSPI 100과 KOSDAQ 100을 분리해 적정가 대비 저평가율 순으로 표시합니다.
 - 업종 비교 표는 같은 업종 종목의 PER, ROE, 시가총액, 매출/순이익 YoY·QoQ, 다음 분기 예상 성장률을 함께 보여줍니다.
-- 미국 주식 탭은 Nasdaq 종목별 quote info의 최신 체결가와 Nasdaq summary의 1년 목표가를 사용합니다. PER, Forward PER, PEG, 매출/순이익 YoY·QoQ, 5년 매출 성장 전망, 5년 EPS 성장 전망은 StockAnalysis 공개 통계와 분기 재무 페이지에서 가져오며, 지연 시세나 장마감 데이터는 기준일과 상태를 화면에 함께 표시합니다.
+- 미국 주식 탭은 Nasdaq 종목별 quote info의 최신 체결가와 Nasdaq summary의 1년 목표가를 사용합니다. PER, Forward PER, PEG, P/S, P/FCF, EV/EBITDA, ROE, ROIC, 마진, 부채비율, 유동비율, 공매도, 애널리스트 컨센서스, 매출/순이익 YoY·QoQ, 5년 매출 성장 전망, 5년 EPS 성장 전망은 StockAnalysis 공개 통계와 분기 재무 페이지에서 가져오며, 지연 시세나 장마감 데이터는 기준일과 상태를 화면에 함께 표시합니다.
+- 미국 주식 저평가 탭은 NASDAQ, NYSE, AMEX 거래소별 버튼과 AI, AI SW, SW, 전력, 광통신, 반도체, 데이터센터, 클라우드 등 상세 테마 필터로 저평가 순위를 보여줍니다.
 
 수집처에서 제공하지 않는 값은 임의로 채우지 않고 `-`로 표시합니다.
