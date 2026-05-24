@@ -25,6 +25,7 @@
       font-family: "Noto Sans KR", "Apple SD Gothic Neo", "Malgun Gothic", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
     }
     * { box-sizing: border-box; }
+    [hidden] { display: none !important; }
     html { font-size: 15px; }
     body {
       margin: 0;
@@ -77,6 +78,29 @@
       overflow: hidden;
       text-overflow: ellipsis;
     }
+    .top-tabs {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      flex: 1 1 auto;
+      min-width: 0;
+    }
+    .top-tab {
+      border: 1px solid var(--line);
+      background: #fff;
+      color: var(--muted);
+      border-radius: 7px;
+      min-height: 36px;
+      padding: 0 12px;
+      font-size: 0.86rem;
+      font-weight: 950;
+      white-space: nowrap;
+    }
+    .top-tab.active {
+      border-color: var(--green);
+      background: var(--surface-2);
+      color: var(--green-2);
+    }
     .actions {
       display: flex;
       align-items: center;
@@ -109,6 +133,45 @@
       grid-template-columns: minmax(330px, 420px) minmax(0, 1fr);
       gap: 14px;
       align-items: start;
+    }
+    .rank-view {
+      width: min(1440px, calc(100% - 24px));
+      margin: 16px auto 28px;
+    }
+    .rank-toolbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 12px 14px;
+      border-bottom: 1px solid var(--line);
+      background: #fbfcfd;
+    }
+    .rank-filter {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+    .rank-filter button {
+      border: 1px solid var(--line);
+      border-radius: 7px;
+      background: #fff;
+      min-height: 34px;
+      padding: 0 10px;
+      color: var(--muted);
+      font-size: 0.82rem;
+      font-weight: 950;
+    }
+    .rank-filter button.active {
+      border-color: var(--green);
+      background: var(--surface-2);
+      color: var(--green-2);
+    }
+    .rank-summary {
+      color: var(--muted);
+      font-size: 0.8rem;
+      font-weight: 800;
+      text-align: right;
     }
     .panel {
       background: var(--surface);
@@ -340,6 +403,36 @@
       font-weight: 900;
       color: var(--ink);
     }
+    .rank-table-wrap {
+      margin: 14px;
+      max-height: calc(100vh - 190px);
+      overflow: auto;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+    }
+    .rank-table {
+      min-width: 1080px;
+    }
+    .rank-table tbody tr {
+      cursor: pointer;
+    }
+    .rank-table tbody tr:hover td {
+      background: #f0fdf4;
+    }
+    .rank-view-btn {
+      border: 1px solid var(--line-2);
+      border-radius: 6px;
+      background: #fff;
+      color: var(--green-2);
+      min-height: 28px;
+      padding: 0 8px;
+      font-size: 0.78rem;
+      font-weight: 950;
+    }
+    .rank-upside {
+      color: var(--green);
+      font-weight: 950;
+    }
     .pill {
       display: inline-flex;
       align-items: center;
@@ -439,6 +532,8 @@
         align-items: flex-start;
         flex-direction: column;
       }
+      .top-tabs { width: 100%; }
+      .top-tab { flex: 1 1 0; }
       .actions { width: 100%; justify-content: stretch; }
       .actions .btn { flex: 1 1 0; }
       main { width: calc(100% - 12px); margin-top: 8px; }
@@ -458,6 +553,10 @@
           <h1>S-RIM 마법사 Plus</h1>
           <small id="dataStatus">최신 기준값 확인 중</small>
         </div>
+        <nav class="top-tabs" aria-label="화면 선택">
+          <button class="top-tab active" type="button" data-view-tab="calculator">계산기</button>
+          <button class="top-tab" type="button" data-view-tab="ranking">저평가 순위</button>
+        </nav>
         <div class="actions">
           <button class="btn ghost" type="button" id="loadLatest">최신값</button>
           <button class="btn ghost" type="button" id="saveCase">저장</button>
@@ -467,7 +566,7 @@
       </div>
     </header>
 
-    <main>
+    <main id="calculatorView">
       <section class="panel inputs" aria-labelledby="inputTitle">
         <div class="panel-head">
           <h2 id="inputTitle">입력</h2>
@@ -683,6 +782,43 @@
         </div>
       </section>
     </main>
+
+    <section class="panel rank-view" id="rankView" hidden aria-labelledby="rankTitle">
+      <div class="panel-head">
+        <h2 id="rankTitle">저평가 순위</h2>
+        <div class="meta">S-RIM 10% 감소 시나리오 기준</div>
+      </div>
+      <div class="rank-toolbar">
+        <div class="rank-filter" aria-label="순위 시장 선택">
+          <button class="active" type="button" data-rank-market="ALL">전체</button>
+          <button type="button" data-rank-market="KOSPI">KOSPI</button>
+          <button type="button" data-rank-market="KOSDAQ">KOSDAQ</button>
+        </div>
+        <div class="rank-summary" id="rankSummary">계산 준비 중</div>
+      </div>
+      <div class="rank-table-wrap">
+        <table class="rank-table">
+          <thead>
+            <tr>
+              <th>순위</th>
+              <th>시장</th>
+              <th>코드</th>
+              <th>종목명</th>
+              <th>현재가</th>
+              <th>S-RIM 적정가</th>
+              <th>상승여력</th>
+              <th>매수 기준</th>
+              <th>ROE</th>
+              <th>PER</th>
+              <th>시가총액</th>
+              <th>업종</th>
+              <th>보기</th>
+            </tr>
+          </thead>
+          <tbody id="rankRows"></tbody>
+        </table>
+      </div>
+    </section>
   </div>
 
   <script>
@@ -724,7 +860,10 @@
 
     const state = {
       latest: DEFAULT_DATA,
+      activeView: "calculator",
       activeMarket: "KOSPI",
+      rankMarket: "ALL",
+      rankings: [],
       selectedStock: null,
       lastResult: null
     };
@@ -819,6 +958,12 @@
       };
     }
 
+    function finiteNumber(value) {
+      if (value === null || value === undefined || value === "") return NaN;
+      const number = Number(value);
+      return Number.isFinite(number) ? number : NaN;
+    }
+
     function computeScenario(model, scenario) {
       const years = [];
       let equity = model.equityEok;
@@ -844,6 +989,108 @@
       const sellPrice = fairPrice * (1 + model.marginOfSafety);
 
       return { ...scenario, years, businessValueEok, fairPrice, upside, buyPrice, sellPrice, pvResidualIncome };
+    }
+
+    function modelFromStock(stock) {
+      const currentPrice = finiteNumber(stock.currentPrice);
+      const shareCount = finiteNumber(stock.shares);
+      const per = finiteNumber(stock.per);
+      const roe = finiteNumber(stock.roe);
+      const volume = finiteNumber(stock.volume);
+      const directMarketCap = finiteNumber(stock.marketCapEok);
+      const marketCapEok = Number.isFinite(directMarketCap)
+        ? directMarketCap
+        : currentPrice * shareCount / 100000000;
+
+      if (
+        !Number.isFinite(currentPrice) || currentPrice <= 0 ||
+        !Number.isFinite(shareCount) || shareCount <= 0 ||
+        !Number.isFinite(marketCapEok) || marketCapEok <= 0 ||
+        !Number.isFinite(volume) || volume <= 0 ||
+        !Number.isFinite(per) || per < 1 || per > 80 ||
+        !Number.isFinite(roe) || roe < 0.0805 || roe > 0.8
+      ) {
+        return null;
+      }
+
+      const netIncomeEok = marketCapEok / per;
+      const equityEok = netIncomeEok / roe;
+      const market = state.latest.market || {};
+      const requiredReturn = finiteNumber(market.defaultRequiredReturn) || 0.0805;
+      if (!Number.isFinite(netIncomeEok) || !Number.isFinite(equityEok) || equityEok <= 0) return null;
+
+      return {
+        code: stock.code,
+        companyName: stock.name || stock.code,
+        currentPrice,
+        commonShares: shareCount,
+        preferredShares: 0,
+        treasuryShares: 0,
+        shareCount,
+        marginOfSafety: 0.2,
+        equityEok,
+        netIncomeEok,
+        roe,
+        beta: 1,
+        riskFreeRate: finiteNumber(market.riskFreeRate) || 0.016,
+        marketRiskPremium: finiteNumber(market.marketRiskPremium) || 0.0664,
+        requiredReturn,
+        scenarioChoice: "decay10",
+        dateAdjustmentYears: 0
+      };
+    }
+
+    function buildRankings() {
+      const scenario = { key: "decay10", name: "초과이익 매년 10% 감소", decay: 0.1 };
+      return (state.latest.stocks || [])
+        .map((stock) => {
+          const model = modelFromStock(stock);
+          if (!model) return null;
+          const value = computeScenario(model, scenario);
+          if (!Number.isFinite(value.fairPrice) || !Number.isFinite(value.upside)) return null;
+          return {
+            stock,
+            model,
+            fairPrice: value.fairPrice,
+            upside: value.upside,
+            buyPrice: value.buyPrice
+          };
+        })
+        .filter(Boolean)
+        .sort((a, b) => b.upside - a.upside);
+    }
+
+    function renderRankings() {
+      if (!state.rankings.length) state.rankings = buildRankings();
+      const rows = state.rankings.filter((item) => state.rankMarket === "ALL" || item.stock.market === state.rankMarket);
+      document.querySelectorAll("[data-rank-market]").forEach((button) => {
+        button.classList.toggle("active", button.dataset.rankMarket === state.rankMarket);
+      });
+
+      $("rankSummary").textContent = `${rows.length.toLocaleString("ko-KR")}개 계산 가능 · PER 1~80, ROE 8.05~80%, 거래량 있는 종목`;
+      if (!rows.length) {
+        $("rankRows").innerHTML = `<tr><td colspan="13">계산 가능한 종목이 없습니다.</td></tr>`;
+        return;
+      }
+
+      $("rankRows").innerHTML = rows.map((item, index) => {
+        const stock = item.stock;
+        return `<tr data-rank-code="${escapeHtml(stock.code)}">
+          <td>${(index + 1).toLocaleString("ko-KR")}</td>
+          <td>${escapeHtml(stock.market)}</td>
+          <td>${escapeHtml(stock.code)}</td>
+          <td><span class="scenario-name">${escapeHtml(stock.name || stock.code)}</span></td>
+          <td>${fmtWon(item.model.currentPrice)}</td>
+          <td>${fmtWon(item.fairPrice)}</td>
+          <td><span class="rank-upside">${fmtPct(item.upside)}</span></td>
+          <td>${fmtWon(item.buyPrice)}</td>
+          <td>${fmtPct(item.model.roe, 2)}</td>
+          <td>${fmtRatio(stock.per, 2)}</td>
+          <td>${fmtEok(stock.marketCapEok)}</td>
+          <td title="${escapeHtml(stock.industry || "")}">${escapeHtml(stock.industry || "")}</td>
+          <td><button class="rank-view-btn" type="button" data-rank-code="${escapeHtml(stock.code)}">보기</button></td>
+        </tr>`;
+      }).join("");
     }
 
     function calculate() {
@@ -1053,9 +1300,11 @@
         const response = await fetch("data/latest.json", { cache: "no-store" });
         if (!response.ok) throw new Error(`HTTP ${response.status}`);
         state.latest = await response.json();
+        state.rankings = [];
         $("dataStatus").textContent = `기준값 ${formatDataDate(state.latest.generatedAt)}`;
       } catch (error) {
         state.latest = DEFAULT_DATA;
+        state.rankings = [];
         $("dataStatus").textContent = "기본 기준값 사용";
       }
       updateMarketCounts();
@@ -1111,13 +1360,47 @@
 
     function resetCase() {
       localStorage.removeItem("srim-case");
-      Object.assign(state, { latest: DEFAULT_DATA, activeMarket: "KOSPI", selectedStock: null, lastResult: null });
+      Object.assign(state, { latest: DEFAULT_DATA, activeView: "calculator", activeMarket: "KOSPI", rankMarket: "ALL", rankings: [], selectedStock: null, lastResult: null });
       location.reload();
+    }
+
+    function setTopView(view) {
+      state.activeView = view;
+      $("calculatorView").hidden = view !== "calculator";
+      $("rankView").hidden = view !== "ranking";
+      document.querySelectorAll("[data-view-tab]").forEach((tab) => {
+        tab.classList.toggle("active", tab.dataset.viewTab === view);
+      });
+      if (view === "ranking") renderRankings();
+    }
+
+    function openRankedStock(code) {
+      const stock = (state.latest.stocks || []).find((item) => item.code === code);
+      if (!stock) return;
+      state.activeMarket = stock.market || state.activeMarket;
+      $("stockSearch").value = "";
+      populateStockPicker(stock.code);
+      applyStock(stock);
+      setTopView("calculator");
+      window.scrollTo({ top: 0, behavior: "smooth" });
     }
 
     function attachEvents() {
       inputs.forEach((id) => $(id).addEventListener("input", calculate));
       document.querySelectorAll("input[type=radio]").forEach((input) => input.addEventListener("change", calculate));
+      document.querySelectorAll("[data-view-tab]").forEach((tab) => {
+        tab.addEventListener("click", () => setTopView(tab.dataset.viewTab));
+      });
+      document.querySelectorAll("[data-rank-market]").forEach((button) => {
+        button.addEventListener("click", () => {
+          state.rankMarket = button.dataset.rankMarket;
+          renderRankings();
+        });
+      });
+      $("rankRows").addEventListener("click", (event) => {
+        const target = event.target.closest("[data-rank-code]");
+        if (target) openRankedStock(target.dataset.rankCode);
+      });
       $("calculateNow").addEventListener("click", calculate);
       $("loadLatest").addEventListener("click", () => {
         applyMarketDefaults();
