@@ -467,6 +467,56 @@
       padding: 14px;
       border-top: 1px solid var(--line);
     }
+    .peer-panel {
+      margin: 0 14px 14px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #fff;
+      overflow: hidden;
+    }
+    .peer-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      padding: 12px;
+      border-bottom: 1px solid var(--line);
+      background: #fbfcfd;
+    }
+    .peer-head h3 {
+      margin: 0;
+      font-size: 0.86rem;
+      font-weight: 950;
+    }
+    .peer-head span {
+      color: var(--muted);
+      font-size: 0.76rem;
+      font-weight: 800;
+      text-align: right;
+    }
+    .peer-table-wrap {
+      overflow: auto;
+      max-height: 310px;
+    }
+    .peer-table {
+      min-width: 960px;
+    }
+    .peer-table tbody tr {
+      cursor: pointer;
+    }
+    .peer-table tbody tr:hover td {
+      background: #f0fdf4;
+    }
+    .peer-table tr.selected-peer td {
+      background: #ecfdf5;
+      font-weight: 900;
+    }
+    .peer-empty {
+      padding: 14px;
+      color: var(--muted);
+      font-size: 0.82rem;
+      font-weight: 800;
+    }
     .note-box {
       border: 1px solid var(--line);
       border-radius: 8px;
@@ -708,6 +758,7 @@
 
         <div class="tabs" role="tablist" aria-label="결과 보기">
           <button class="tab active" type="button" data-view="summary">시나리오</button>
+          <button class="tab" type="button" data-view="peers">경쟁사 비교</button>
           <button class="tab" type="button" data-view="forecast">연도별 계산</button>
           <button class="tab" type="button" data-view="check">검토</button>
         </div>
@@ -734,6 +785,35 @@
             <div class="note-box">
               <h3>핵심 입력값</h3>
               <ul id="inputSummary"></ul>
+            </div>
+          </div>
+        </div>
+
+        <div class="scenario-wrap" data-pane="peers" hidden>
+          <div class="peer-panel">
+            <div class="peer-head">
+              <h3>동일 업종 경쟁사 비교</h3>
+              <span id="peerSummary">종목 선택 후 표시</span>
+            </div>
+            <div class="peer-table-wrap">
+              <table class="peer-table">
+                <thead>
+                  <tr>
+                    <th>시장</th>
+                    <th>코드</th>
+                    <th>종목명</th>
+                    <th>현재가</th>
+                    <th>S-RIM 적정가</th>
+                    <th>상승여력</th>
+                    <th>매수 기준</th>
+                    <th>ROE</th>
+                    <th>PER</th>
+                    <th>시가총액</th>
+                    <th>거래량</th>
+                  </tr>
+                </thead>
+                <tbody id="peerRows"></tbody>
+              </table>
             </div>
           </div>
         </div>
@@ -991,7 +1071,7 @@
       return { ...scenario, years, businessValueEok, fairPrice, upside, buyPrice, sellPrice, pvResidualIncome };
     }
 
-    function modelFromStock(stock) {
+    function modelFromStock(stock, strict = true) {
       const currentPrice = finiteNumber(stock.currentPrice);
       const shareCount = finiteNumber(stock.shares);
       const per = finiteNumber(stock.per);
@@ -1006,9 +1086,9 @@
         !Number.isFinite(currentPrice) || currentPrice <= 0 ||
         !Number.isFinite(shareCount) || shareCount <= 0 ||
         !Number.isFinite(marketCapEok) || marketCapEok <= 0 ||
-        !Number.isFinite(volume) || volume <= 0 ||
-        !Number.isFinite(per) || per < 1 || per > 80 ||
-        !Number.isFinite(roe) || roe < 0.0805 || roe > 0.8
+        !Number.isFinite(per) || per <= 0 ||
+        !Number.isFinite(roe) || roe <= -0.5 || roe > 1.5 ||
+        (strict && (!Number.isFinite(volume) || volume <= 0 || per < 1 || per > 80 || roe < 0.0805 || roe > 0.8))
       ) {
         return null;
       }
@@ -1058,6 +1138,83 @@
         })
         .filter(Boolean)
         .sort((a, b) => b.upside - a.upside);
+    }
+
+    function getComparableModel(stock, baseModel) {
+      const peerModel = modelFromStock(stock, false);
+      if (!peerModel) return null;
+      return {
+        ...peerModel,
+        requiredReturn: baseModel.requiredReturn,
+        riskFreeRate: baseModel.riskFreeRate,
+        marketRiskPremium: baseModel.marketRiskPremium,
+        marginOfSafety: baseModel.marginOfSafety,
+        dateAdjustmentYears: baseModel.dateAdjustmentYears,
+        scenarioChoice: baseModel.scenarioChoice
+      };
+    }
+
+    function buildPeerComparison(baseModel, selectedScenario) {
+      const selectedStock = state.selectedStock;
+      if (!selectedStock?.industry) return [];
+      const peers = (state.latest.stocks || [])
+        .filter((stock) => stock.industry === selectedStock.industry)
+        .map((stock) => {
+          const peerModel = getComparableModel(stock, baseModel);
+          if (!peerModel) return null;
+          const value = computeScenario(peerModel, selectedScenario);
+          return {
+            stock,
+            model: peerModel,
+            fairPrice: value.fairPrice,
+            upside: value.upside,
+            buyPrice: value.buyPrice
+          };
+        })
+        .filter(Boolean)
+        .sort((a, b) => {
+          if (a.stock.code === selectedStock.code) return -1;
+          if (b.stock.code === selectedStock.code) return 1;
+          return finiteNumber(b.stock.marketCapEok) - finiteNumber(a.stock.marketCapEok);
+        });
+
+      const selected = peers.find((item) => item.stock.code === selectedStock.code);
+      const others = peers.filter((item) => item.stock.code !== selectedStock.code).slice(0, 11);
+      return selected ? [selected, ...others] : others.slice(0, 12);
+    }
+
+    function renderPeerComparison(baseModel, selectedScenario) {
+      const selectedStock = state.selectedStock;
+      const peers = buildPeerComparison(baseModel, selectedScenario);
+      const industry = selectedStock?.industry || "";
+      const totalIndustryCount = industry
+        ? (state.latest.stocks || []).filter((stock) => stock.industry === industry).length
+        : 0;
+
+      if (!peers.length) {
+        $("peerSummary").textContent = industry ? `${industry} · 비교 가능한 수치 없음` : "업종 정보 없음";
+        $("peerRows").innerHTML = `<tr><td colspan="11"><div class="peer-empty">동일 업종에서 비교 가능한 PER/ROE/시세 데이터가 없습니다.</div></td></tr>`;
+        return;
+      }
+
+      $("peerSummary").textContent = `${industry} · ${totalIndustryCount.toLocaleString("ko-KR")}개 중 ${peers.length.toLocaleString("ko-KR")}개 표시`;
+      $("peerRows").innerHTML = peers.map((item) => {
+        const stock = item.stock;
+        const selectedClass = stock.code === selectedStock?.code ? " class=\"selected-peer\"" : "";
+        return `<tr${selectedClass} data-peer-code="${escapeHtml(stock.code)}">
+          <td>${escapeHtml(stock.market)}</td>
+          <td>${escapeHtml(stock.code)}</td>
+          <td><span class="scenario-name">${escapeHtml(stock.name || stock.code)}</span></td>
+          <td>${fmtWon(item.model.currentPrice)}</td>
+          <td>${fmtWon(item.fairPrice)}</td>
+          <td><span class="${item.upside >= 0 ? "rank-upside" : ""}">${fmtPct(item.upside)}</span></td>
+          <td>${fmtWon(item.buyPrice)}</td>
+          <td>${fmtPct(item.model.roe, 2)}</td>
+          <td>${fmtRatio(stock.per, 2)}</td>
+          <td>${fmtEok(stock.marketCapEok)}</td>
+          <td>${Number.isFinite(finiteNumber(stock.volume)) ? Math.round(finiteNumber(stock.volume)).toLocaleString("ko-KR") : "-"}</td>
+        </tr>`;
+      }).join("");
     }
 
     function renderRankings() {
@@ -1158,6 +1315,7 @@
         `ROE ${fmtPct(model.roe, 2)}, 요구수익률 ${fmtPct(model.requiredReturn, 2)}, Spread ${fmtPct(model.roe - model.requiredReturn, 2)}`,
         `안전마진 ${fmtPct(model.marginOfSafety, 0)}, 분석일 조정 ${fmtRatio(model.dateAdjustmentYears)}년`
       ].map((text) => `<li>${text}</li>`).join("");
+      renderPeerComparison(model, selected);
 
       const checks = [];
       if (model.shareCount <= 0) checks.push(["bad", "유통 기준 주식수가 0 이하입니다."]);
@@ -1400,6 +1558,10 @@
       $("rankRows").addEventListener("click", (event) => {
         const target = event.target.closest("[data-rank-code]");
         if (target) openRankedStock(target.dataset.rankCode);
+      });
+      $("peerRows").addEventListener("click", (event) => {
+        const target = event.target.closest("[data-peer-code]");
+        if (target) openRankedStock(target.dataset.peerCode);
       });
       $("calculateNow").addEventListener("click", calculate);
       $("loadLatest").addEventListener("click", () => {
