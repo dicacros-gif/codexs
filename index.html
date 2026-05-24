@@ -159,6 +159,42 @@
       gap: 10px;
     }
     .field-grid.single { grid-template-columns: 1fr; }
+    .market-tabs {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+      margin-bottom: 10px;
+    }
+    .market-tab {
+      border: 1px solid var(--line);
+      border-radius: 7px;
+      min-height: 38px;
+      background: #fff;
+      color: var(--muted);
+      font-weight: 950;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+    }
+    .market-tab.active {
+      border-color: var(--green);
+      background: var(--surface-2);
+      color: var(--green-2);
+    }
+    .market-tab small {
+      font-size: 0.72rem;
+      font-weight: 900;
+      color: inherit;
+      opacity: 0.78;
+    }
+    .stock-helper {
+      margin-top: 8px;
+      color: var(--muted);
+      font-size: 0.76rem;
+      font-weight: 800;
+    }
+    .stock-helper strong { color: var(--green-2); }
     label {
       display: grid;
       gap: 5px;
@@ -440,14 +476,24 @@
 
         <div class="form-section">
           <h3 class="section-title">종목</h3>
+          <div class="market-tabs" role="tablist" aria-label="시장 선택">
+            <button class="market-tab active" type="button" data-market="KOSPI">KOSPI <small id="kospiCount">0</small></button>
+            <button class="market-tab" type="button" data-market="KOSDAQ">KOSDAQ <small id="kosdaqCount">0</small></button>
+          </div>
+          <div class="field-grid single" style="margin-bottom:10px">
+            <label>종목 검색
+              <input id="stockSearch" type="search" inputmode="search" autocomplete="off" placeholder="회사명 또는 코드 입력">
+            </label>
+          </div>
           <div class="field-grid">
-            <label>저장된 최신 종목
+            <label>전체 종목
               <select id="stockPicker"></select>
             </label>
             <label>종목코드
               <input id="stockCode" type="text" inputmode="text" autocomplete="off" value="005930">
             </label>
           </div>
+          <div class="stock-helper" id="stockHelper">최신 종목 데이터를 불러오는 중입니다.</div>
           <div class="field-grid" style="margin-top:10px">
             <label>회사명
               <input id="companyName" type="text" autocomplete="off" value="삼성전자">
@@ -653,16 +699,32 @@
           code: "005930",
           name: "삼성전자",
           market: "KOSPI",
+          industry: "통신 및 방송 장비 제조업",
           currentPrice: 292500,
           shares: 5846278608,
+          marketCapEok: 17100365,
+          hasMarketData: true,
           asOf: "2026.05.22",
           sourceUrl: "https://finance.naver.com/item/main.naver?code=005930"
+        },
+        {
+          code: "035720",
+          name: "카카오",
+          market: "KOSPI",
+          industry: "자료처리, 호스팅, 포털 및 기타 인터넷 정보매개 서비스업",
+          currentPrice: 41850,
+          shares: 441691000,
+          marketCapEok: 184848,
+          hasMarketData: true,
+          asOf: "2026.05.22",
+          sourceUrl: "https://finance.naver.com/item/main.naver?code=035720"
         }
       ]
     };
 
     const state = {
       latest: DEFAULT_DATA,
+      activeMarket: "KOSPI",
       selectedStock: null,
       lastResult: null
     };
@@ -686,6 +748,20 @@
 
     function setValue(id, value) {
       if (value !== undefined && value !== null && value !== "") $(id).value = value;
+    }
+
+    function clearAndSetValue(id, value) {
+      $(id).value = value === undefined || value === null ? "" : value;
+    }
+
+    function escapeHtml(value) {
+      return String(value ?? "").replace(/[&<>"']/g, (char) => ({
+        "&": "&amp;",
+        "<": "&lt;",
+        ">": "&gt;",
+        "\"": "&quot;",
+        "'": "&#39;"
+      })[char]);
     }
 
     function fmtWon(value) {
@@ -883,12 +959,60 @@
       svg.innerHTML = `${grid}<line x1="${pad.left}" y1="${axisY}" x2="${width - pad.right}" y2="${axisY}" stroke="#cbd5e1"></line>${items}`;
     }
 
-    function populateStockPicker() {
-      const stocks = state.latest.stocks || [];
+    function stocksForMarket(market = state.activeMarket) {
+      return (state.latest.stocks || []).filter((stock) => stock.market === market);
+    }
+
+    function filteredStocksForMarket() {
+      const query = $("stockSearch").value.trim().toLowerCase();
+      const stocks = stocksForMarket();
+      if (!query) return stocks;
+      return stocks.filter((stock) => {
+        const text = `${stock.code} ${stock.name || ""} ${stock.industry || ""}`.toLowerCase();
+        return text.includes(query);
+      });
+    }
+
+    function updateMarketCounts() {
+      const counts = state.latest.counts || {};
+      const kospi = counts.KOSPI ?? stocksForMarket("KOSPI").length;
+      const kosdaq = counts.KOSDAQ ?? stocksForMarket("KOSDAQ").length;
+      $("kospiCount").textContent = kospi.toLocaleString("ko-KR");
+      $("kosdaqCount").textContent = kosdaq.toLocaleString("ko-KR");
+    }
+
+    function populateStockPicker(preferredCode = "") {
+      updateMarketCounts();
+      document.querySelectorAll(".market-tab").forEach((tab) => {
+        tab.classList.toggle("active", tab.dataset.market === state.activeMarket);
+      });
+
+      const filtered = filteredStocksForMarket();
+      const options = filtered.map((stock) => {
+        const label = `${stock.code} · ${stock.name || stock.code}${stock.hasMarketData === false ? " · 시세없음" : ""}`;
+        return `<option value="${escapeHtml(stock.code)}">${escapeHtml(label)}</option>`;
+      });
       $("stockPicker").innerHTML = [
         `<option value="">수동 입력</option>`,
-        ...stocks.map((stock) => `<option value="${stock.code}">${stock.code} · ${stock.name || stock.code}</option>`)
+        ...options
       ].join("");
+
+      const selectedCode = preferredCode || state.selectedStock?.code || "";
+      if (selectedCode && filtered.some((stock) => stock.code === selectedCode)) {
+        $("stockPicker").value = selectedCode;
+      }
+
+      const total = stocksForMarket().length;
+      const shown = filtered.length;
+      $("stockHelper").innerHTML = `<strong>${state.activeMarket}</strong> ${total.toLocaleString("ko-KR")}개 중 ${shown.toLocaleString("ko-KR")}개 표시`;
+    }
+
+    function setActiveMarket(market, preferredCode = "") {
+      state.activeMarket = market;
+      $("stockSearch").value = "";
+      populateStockPicker(preferredCode);
+      const stock = stocksForMarket(market).find((item) => item.code === preferredCode) || filteredStocksForMarket()[0];
+      if (stock) applyStock(stock);
     }
 
     function applyMarketDefaults() {
@@ -901,12 +1025,26 @@
     function applyStock(stock) {
       if (!stock) return;
       state.selectedStock = stock;
-      setValue("stockCode", stock.code);
-      setValue("companyName", stock.name);
-      setValue("currentPrice", stock.currentPrice);
-      setValue("commonShares", stock.shares);
-      $("selectedSource").textContent = `${stock.asOf || "최신"} · ${stock.market || "시장"}`;
-      $("dataStamp").textContent = stock.asOf || state.latest.generatedAt || "latest.json";
+      clearAndSetValue("stockCode", stock.code);
+      clearAndSetValue("companyName", stock.name);
+      clearAndSetValue("currentPrice", stock.currentPrice);
+      clearAndSetValue("commonShares", stock.shares);
+      if (Number.isFinite(stock.marketCapEok) && Number.isFinite(stock.per) && stock.per !== 0) {
+        const inferredNetIncome = stock.marketCapEok / stock.per;
+        clearAndSetValue("netIncomeEok", Math.round(inferredNetIncome));
+        if (Number.isFinite(stock.roe) && Math.abs(stock.roe) > 0.0001) {
+          clearAndSetValue("equityEok", Math.round(inferredNetIncome / stock.roe));
+        }
+      }
+      if (Number.isFinite(stock.roe)) {
+        clearAndSetValue("roe", stock.roe);
+        document.querySelector('input[name="roeMode"][value="manual"]').checked = true;
+      }
+      $("stockPicker").value = stock.code;
+      const sourceDate = stock.asOf || state.latest.asOf || state.latest.generatedAt || "latest.json";
+      const freshness = stock.hasMarketData === false ? "시세 없음" : "최신 시세";
+      $("selectedSource").textContent = `${stock.market || "시장"} · ${freshness}`;
+      $("dataStamp").textContent = `${formatDataDate(sourceDate)} · ${stock.market || ""}`;
       calculate();
     }
 
@@ -920,10 +1058,13 @@
         state.latest = DEFAULT_DATA;
         $("dataStatus").textContent = "기본 기준값 사용";
       }
+      updateMarketCounts();
       populateStockPicker();
       applyMarketDefaults();
-      const firstStock = state.latest.stocks?.[0];
+      const firstStock = stocksForMarket("KOSPI")[0] || state.latest.stocks?.[0];
       if (firstStock) {
+        state.activeMarket = firstStock.market || "KOSPI";
+        populateStockPicker(firstStock.code);
         $("stockPicker").value = firstStock.code;
         applyStock(firstStock);
       } else {
@@ -943,6 +1084,8 @@
       inputs.forEach((id) => payload[id] = $(id).value);
       payload.roeMode = getRadio("roeMode");
       payload.discountMode = getRadio("discountMode");
+      payload.activeMarket = state.activeMarket;
+      payload.stockSearch = $("stockSearch").value;
       localStorage.setItem("srim-case", JSON.stringify(payload));
       $("dataStatus").textContent = "현재 입력값 저장됨";
     }
@@ -952,6 +1095,9 @@
       if (!raw) return false;
       try {
         const payload = JSON.parse(raw);
+        state.activeMarket = payload.activeMarket || state.activeMarket;
+        $("stockSearch").value = payload.stockSearch || "";
+        populateStockPicker(payload.stockCode || "");
         inputs.forEach((id) => setValue(id, payload[id]));
         if (payload.roeMode) document.querySelector(`input[name="roeMode"][value="${payload.roeMode}"]`).checked = true;
         if (payload.discountMode) document.querySelector(`input[name="discountMode"][value="${payload.discountMode}"]`).checked = true;
@@ -965,7 +1111,7 @@
 
     function resetCase() {
       localStorage.removeItem("srim-case");
-      Object.assign(state, { latest: DEFAULT_DATA, selectedStock: null, lastResult: null });
+      Object.assign(state, { latest: DEFAULT_DATA, activeMarket: "KOSPI", selectedStock: null, lastResult: null });
       location.reload();
     }
 
@@ -975,14 +1121,20 @@
       $("calculateNow").addEventListener("click", calculate);
       $("loadLatest").addEventListener("click", () => {
         applyMarketDefaults();
-        const stock = (state.latest.stocks || []).find((item) => item.code === $("stockPicker").value) || state.latest.stocks?.[0];
+        const stock = (state.latest.stocks || []).find((item) => item.code === $("stockPicker").value) || stocksForMarket()[0] || state.latest.stocks?.[0];
         applyStock(stock);
       });
       $("saveCase").addEventListener("click", saveCase);
       $("resetCase").addEventListener("click", resetCase);
+      $("stockSearch").addEventListener("input", () => {
+        populateStockPicker();
+      });
       $("stockPicker").addEventListener("change", (event) => {
         const stock = (state.latest.stocks || []).find((item) => item.code === event.target.value);
         if (stock) applyStock(stock);
+      });
+      document.querySelectorAll(".market-tab").forEach((tab) => {
+        tab.addEventListener("click", () => setActiveMarket(tab.dataset.market));
       });
       document.querySelectorAll(".tab").forEach((tab) => {
         tab.addEventListener("click", () => {
