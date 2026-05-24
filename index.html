@@ -137,8 +137,15 @@
     .rank-view {
       width: min(1440px, calc(100% - 24px));
       margin: 16px auto 28px;
+      overflow: visible;
+    }
+    .panel.rank-view {
+      overflow: visible;
     }
     .rank-toolbar {
+      position: sticky;
+      top: 61px;
+      z-index: 12;
       display: flex;
       align-items: center;
       justify-content: space-between;
@@ -183,6 +190,7 @@
       border-radius: 8px;
       background: #fff;
       overflow: hidden;
+      scroll-margin-top: 132px;
     }
     .rank-section-head {
       display: flex;
@@ -1058,10 +1066,14 @@
         <div class="meta">S-RIM 10% 감소 시나리오 기준</div>
       </div>
       <div class="rank-toolbar">
+        <div class="rank-filter" id="krRankTabs" aria-label="국내 저평가 순위 이동">
+          <button class="active" type="button" data-rank-target="rankKospiSection">KOSPI</button>
+          <button type="button" data-rank-target="rankKosdaqSection">KOSDAQ</button>
+        </div>
         <div class="rank-summary" id="rankSummary">KOSPI 100 · KOSDAQ 100 계산 준비 중</div>
       </div>
       <div class="rank-split">
-        <section class="rank-section" aria-labelledby="rankKospiTitle">
+        <section class="rank-section" id="rankKospiSection" aria-labelledby="rankKospiTitle">
           <div class="rank-section-head">
             <h3 id="rankKospiTitle">KOSPI 저평가 Top 100</h3>
             <span id="rankKospiSummary">계산 준비 중</span>
@@ -1090,7 +1102,7 @@
           </div>
         </section>
 
-        <section class="rank-section" aria-labelledby="rankKosdaqTitle">
+        <section class="rank-section" id="rankKosdaqSection" aria-labelledby="rankKosdaqTitle">
           <div class="rank-section-head">
             <h3 id="rankKosdaqTitle">KOSDAQ 저평가 Top 100</h3>
             <span id="rankKosdaqSummary">계산 준비 중</span>
@@ -2555,6 +2567,16 @@
       window.scrollTo({ top: 0, behavior: "smooth" });
     }
 
+    function moveToKrRankSection(targetId) {
+      const section = $(targetId);
+      if (!section) return;
+      document.querySelectorAll("#krRankTabs button").forEach((button) => {
+        button.classList.toggle("active", button.dataset.rankTarget === targetId);
+      });
+      const top = section.getBoundingClientRect().top + window.scrollY - 132;
+      window.scrollTo({ top: Math.max(top, 0) });
+    }
+
     function openUsRankedStock(symbol) {
       const stock = usStocks().find((item) => item.symbol === symbol);
       if (!stock) return;
@@ -2572,6 +2594,10 @@
       document.querySelectorAll("input[type=radio]").forEach((input) => input.addEventListener("change", calculate));
       document.querySelectorAll("[data-view-tab]").forEach((tab) => {
         tab.addEventListener("click", () => setTopView(tab.dataset.viewTab));
+      });
+      $("krRankTabs").addEventListener("click", (event) => {
+        const target = event.target.closest("[data-rank-target]");
+        if (target) moveToKrRankSection(target.dataset.rankTarget);
       });
       ["rankKospiRows", "rankKosdaqRows"].forEach((id) => {
         $(id).addEventListener("click", (event) => {
