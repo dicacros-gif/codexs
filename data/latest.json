@@ -1,0 +1,20 @@
+{
+  "generatedAt": "2026-05-24T17:51:25+09:00",
+  "market": {
+    "riskFreeRate": 0.016,
+    "marketRiskPremium": 0.0664,
+    "defaultRequiredReturn": 0.0805,
+    "source": "GitHub Actions daily updater; rates can be overridden with repository environment variables"
+  },
+  "stocks": [
+    {
+      "code": "005930",
+      "name": "삼성전자",
+      "market": "KOSPI",
+      "currentPrice": 292500,
+      "shares": 5846278608,
+      "asOf": "2026.05.22",
+      "sourceUrl": "https://finance.naver.com/item/main.naver?code=005930"
+    }
+  ]
+}

@@ -1,0 +1,1005 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>S-RIM 마법사 Plus</title>
+  <meta name="description" content="S-RIM 잔여이익모델 계산기">
+  <style>
+    :root {
+      color-scheme: light;
+      --bg: #f5f6f8;
+      --surface: #ffffff;
+      --surface-2: #eef6f2;
+      --ink: #17202a;
+      --muted: #667085;
+      --line: #d7dde5;
+      --line-2: #c6d8d0;
+      --green: #0f7a55;
+      --green-2: #14532d;
+      --amber: #b45309;
+      --red: #b42318;
+      --blue: #1d4ed8;
+      --shadow: 0 10px 28px rgba(15, 23, 42, 0.08);
+      --radius: 8px;
+      font-family: "Noto Sans KR", "Apple SD Gothic Neo", "Malgun Gothic", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+    * { box-sizing: border-box; }
+    html { font-size: 15px; }
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--ink);
+      line-height: 1.45;
+      letter-spacing: 0;
+    }
+    button, input, select { font: inherit; }
+    button { cursor: pointer; }
+    .app {
+      min-height: 100vh;
+      display: grid;
+      grid-template-rows: auto 1fr;
+    }
+    header {
+      position: sticky;
+      top: 0;
+      z-index: 20;
+      border-bottom: 1px solid var(--line);
+      background: rgba(255, 255, 255, 0.94);
+      backdrop-filter: blur(14px);
+    }
+    .topbar {
+      width: min(1440px, calc(100% - 24px));
+      margin: 0 auto;
+      min-height: 60px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+    }
+    .brand {
+      display: flex;
+      align-items: baseline;
+      gap: 10px;
+      min-width: 0;
+    }
+    h1 {
+      margin: 0;
+      font-size: 1.08rem;
+      font-weight: 900;
+      white-space: nowrap;
+    }
+    .brand small {
+      color: var(--muted);
+      font-size: 0.78rem;
+      font-weight: 700;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .actions {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+    }
+    .btn {
+      border: 1px solid var(--line);
+      background: var(--surface);
+      color: var(--ink);
+      border-radius: 7px;
+      min-height: 36px;
+      padding: 0 12px;
+      font-weight: 800;
+      font-size: 0.86rem;
+    }
+    .btn.primary {
+      background: var(--green);
+      border-color: var(--green);
+      color: #fff;
+    }
+    .btn.ghost {
+      background: transparent;
+    }
+    main {
+      width: min(1440px, calc(100% - 24px));
+      margin: 16px auto 28px;
+      display: grid;
+      grid-template-columns: minmax(330px, 420px) minmax(0, 1fr);
+      gap: 14px;
+      align-items: start;
+    }
+    .panel {
+      background: var(--surface);
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      overflow: hidden;
+    }
+    .panel-head {
+      padding: 12px 14px;
+      border-bottom: 1px solid var(--line);
+      background: #fbfcfd;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+    }
+    .panel-head h2 {
+      margin: 0;
+      font-size: 0.92rem;
+      font-weight: 900;
+    }
+    .panel-head .meta {
+      color: var(--muted);
+      font-size: 0.76rem;
+      font-weight: 700;
+      text-align: right;
+    }
+    .inputs {
+      max-height: calc(100vh - 96px);
+      overflow: auto;
+    }
+    .form-section {
+      padding: 14px;
+      border-bottom: 1px solid var(--line);
+    }
+    .form-section:last-child { border-bottom: 0; }
+    .section-title {
+      margin: 0 0 10px;
+      font-size: 0.82rem;
+      font-weight: 900;
+      color: var(--green-2);
+      text-transform: none;
+    }
+    .field-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+    .field-grid.single { grid-template-columns: 1fr; }
+    label {
+      display: grid;
+      gap: 5px;
+      color: var(--muted);
+      font-size: 0.76rem;
+      font-weight: 800;
+      min-width: 0;
+    }
+    input, select {
+      width: 100%;
+      min-width: 0;
+      border: 1px solid var(--line);
+      border-radius: 7px;
+      background: #fff;
+      color: var(--ink);
+      min-height: 38px;
+      padding: 8px 9px;
+      font-size: 0.92rem;
+      outline: none;
+    }
+    input:focus, select:focus {
+      border-color: var(--green);
+      box-shadow: 0 0 0 3px rgba(15, 122, 85, 0.12);
+    }
+    .rate-row {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 10px;
+      margin-top: 10px;
+    }
+    .toggle-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+      margin-top: 2px;
+    }
+    .toggle-row input { display: none; }
+    .toggle-row span {
+      display: block;
+      border: 1px solid var(--line);
+      border-radius: 7px;
+      min-height: 36px;
+      padding: 8px 10px;
+      text-align: center;
+      background: #fff;
+      color: var(--muted);
+      font-size: 0.82rem;
+      font-weight: 900;
+    }
+    .toggle-row input:checked + span {
+      border-color: var(--green);
+      background: var(--surface-2);
+      color: var(--green-2);
+    }
+    .result-layout {
+      display: grid;
+      gap: 14px;
+    }
+    .kpis {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 10px;
+      padding: 14px;
+      border-bottom: 1px solid var(--line);
+    }
+    .kpi {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 12px;
+      background: #fff;
+      min-width: 0;
+    }
+    .kpi .label {
+      color: var(--muted);
+      font-size: 0.74rem;
+      font-weight: 900;
+      margin-bottom: 7px;
+    }
+    .kpi .value {
+      font-size: clamp(1.05rem, 1.8vw, 1.55rem);
+      font-weight: 950;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .kpi.good .value { color: var(--green); }
+    .kpi.warn .value { color: var(--amber); }
+    .kpi.bad .value { color: var(--red); }
+    .tabs {
+      display: flex;
+      gap: 6px;
+      padding: 12px 14px 0;
+      overflow-x: auto;
+    }
+    .tab {
+      border: 1px solid var(--line);
+      border-radius: 7px 7px 0 0;
+      padding: 8px 10px;
+      background: #f8fafc;
+      color: var(--muted);
+      font-size: 0.82rem;
+      font-weight: 900;
+      white-space: nowrap;
+    }
+    .tab.active {
+      background: #fff;
+      border-bottom-color: #fff;
+      color: var(--green-2);
+    }
+    .scenario-wrap {
+      padding: 0 14px 14px;
+    }
+    .table-wrap {
+      overflow: auto;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      min-width: 720px;
+      background: #fff;
+    }
+    th, td {
+      padding: 9px 10px;
+      border-bottom: 1px solid var(--line);
+      text-align: right;
+      white-space: nowrap;
+      font-size: 0.83rem;
+    }
+    th:first-child, td:first-child { text-align: left; }
+    th {
+      background: #f8fafc;
+      color: var(--muted);
+      font-size: 0.74rem;
+      font-weight: 900;
+      position: sticky;
+      top: 0;
+      z-index: 1;
+    }
+    tbody tr:last-child td { border-bottom: 0; }
+    .scenario-name {
+      font-weight: 900;
+      color: var(--ink);
+    }
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 24px;
+      padding: 0 8px;
+      border-radius: 999px;
+      border: 1px solid var(--line);
+      background: #fff;
+      font-size: 0.75rem;
+      font-weight: 900;
+    }
+    .pill.good {
+      color: var(--green-2);
+      background: #dcfce7;
+      border-color: #bbf7d0;
+    }
+    .pill.warn {
+      color: var(--amber);
+      background: #fffbeb;
+      border-color: #fde68a;
+    }
+    .pill.bad {
+      color: var(--red);
+      background: #fef3f2;
+      border-color: #fecaca;
+    }
+    .analysis-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 14px;
+      padding: 14px;
+      border-top: 1px solid var(--line);
+    }
+    .note-box {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #fff;
+      padding: 12px;
+      min-width: 0;
+    }
+    .note-box h3 {
+      margin: 0 0 8px;
+      font-size: 0.86rem;
+      font-weight: 900;
+    }
+    .note-box ul {
+      margin: 0;
+      padding-left: 18px;
+      color: var(--muted);
+      font-size: 0.82rem;
+      font-weight: 700;
+    }
+    .note-box li + li { margin-top: 5px; }
+    .status-line {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      padding: 12px 14px;
+      border-top: 1px solid var(--line);
+      background: #fbfcfd;
+      color: var(--muted);
+      font-size: 0.78rem;
+      font-weight: 800;
+    }
+    .source-dot {
+      color: var(--green-2);
+      font-weight: 950;
+    }
+    .chart {
+      width: 100%;
+      height: 240px;
+      display: block;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #fff;
+    }
+    .chart-label {
+      font-size: 11px;
+      fill: #667085;
+      font-weight: 700;
+    }
+    .bar-current { fill: #b42318; }
+    .bar-fair { fill: #0f7a55; }
+    .bar-buy { fill: #1d4ed8; }
+    .mobile-only { display: none; }
+    @media (max-width: 1060px) {
+      main { grid-template-columns: 1fr; }
+      .inputs { max-height: none; }
+      .kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    }
+    @media (max-width: 720px) {
+      html { font-size: 14px; }
+      .topbar {
+        min-height: auto;
+        padding: 10px 0;
+        align-items: flex-start;
+        flex-direction: column;
+      }
+      .actions { width: 100%; justify-content: stretch; }
+      .actions .btn { flex: 1 1 0; }
+      main { width: calc(100% - 12px); margin-top: 8px; }
+      .field-grid, .rate-row, .analysis-grid { grid-template-columns: 1fr; }
+      .kpis { grid-template-columns: 1fr; }
+      .panel-head { align-items: flex-start; flex-direction: column; }
+      .panel-head .meta { text-align: left; }
+      table { min-width: 640px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <header>
+      <div class="topbar">
+        <div class="brand">
+          <h1>S-RIM 마법사 Plus</h1>
+          <small id="dataStatus">최신 기준값 확인 중</small>
+        </div>
+        <div class="actions">
+          <button class="btn ghost" type="button" id="loadLatest">최신값</button>
+          <button class="btn ghost" type="button" id="saveCase">저장</button>
+          <button class="btn ghost" type="button" id="resetCase">초기화</button>
+          <button class="btn primary" type="button" id="calculateNow">계산</button>
+        </div>
+      </div>
+    </header>
+
+    <main>
+      <section class="panel inputs" aria-labelledby="inputTitle">
+        <div class="panel-head">
+          <h2 id="inputTitle">입력</h2>
+          <div class="meta" id="selectedSource">수동 입력</div>
+        </div>
+
+        <div class="form-section">
+          <h3 class="section-title">종목</h3>
+          <div class="field-grid">
+            <label>저장된 최신 종목
+              <select id="stockPicker"></select>
+            </label>
+            <label>종목코드
+              <input id="stockCode" type="text" inputmode="text" autocomplete="off" value="005930">
+            </label>
+          </div>
+          <div class="field-grid" style="margin-top:10px">
+            <label>회사명
+              <input id="companyName" type="text" autocomplete="off" value="삼성전자">
+            </label>
+            <label>현재주가 (원)
+              <input id="currentPrice" type="number" min="0" step="1" value="292500">
+            </label>
+          </div>
+        </div>
+
+        <div class="form-section">
+          <h3 class="section-title">주식수</h3>
+          <div class="field-grid">
+            <label>보통주발행주수 (주)
+              <input id="commonShares" type="number" min="0" step="1" value="5846278608">
+            </label>
+            <label>우선주발행주수 (주)
+              <input id="preferredShares" type="number" min="0" step="1" value="0">
+            </label>
+            <label>자기주식 (주)
+              <input id="treasuryShares" type="number" min="0" step="1" value="0">
+            </label>
+            <label>안전마진
+              <input id="marginOfSafety" type="number" min="0" max="0.9" step="0.01" value="0.2">
+            </label>
+          </div>
+        </div>
+
+        <div class="form-section">
+          <h3 class="section-title">자본과 이익</h3>
+          <div class="field-grid">
+            <label>지배주주지분 (억원)
+              <input id="equityEok" type="number" min="0" step="1" value="3639193">
+            </label>
+            <label>지배주주순이익 (억원)
+              <input id="netIncomeEok" type="number" step="1" value="349451">
+            </label>
+          </div>
+          <div class="toggle-row" role="radiogroup" aria-label="ROE 입력 방식">
+            <label><input type="radio" name="roeMode" value="auto" checked><span>순이익으로 ROE</span></label>
+            <label><input type="radio" name="roeMode" value="manual"><span>ROE 직접 입력</span></label>
+          </div>
+          <div class="field-grid" style="margin-top:10px">
+            <label>ROE
+              <input id="roe" type="number" step="0.001" value="0.096">
+            </label>
+            <label>베타
+              <input id="beta" type="number" step="0.01" value="1">
+            </label>
+          </div>
+        </div>
+
+        <div class="form-section">
+          <h3 class="section-title">요구수익률</h3>
+          <div class="toggle-row" role="radiogroup" aria-label="요구수익률 입력 방식">
+            <label><input type="radio" name="discountMode" value="manual" checked><span>직접 적용</span></label>
+            <label><input type="radio" name="discountMode" value="capm"><span>CAPM 적용</span></label>
+          </div>
+          <div class="rate-row">
+            <label>직접 요구수익률
+              <input id="requiredReturn" type="number" step="0.001" value="0.0805">
+            </label>
+            <label>무위험이자율
+              <input id="riskFreeRate" type="number" step="0.001" value="0.016">
+            </label>
+            <label>시장위험프리미엄
+              <input id="marketRiskPremium" type="number" step="0.001" value="0.0664">
+            </label>
+          </div>
+        </div>
+
+        <div class="form-section">
+          <h3 class="section-title">시나리오</h3>
+          <div class="field-grid">
+            <label>선택 기준
+              <select id="scenarioChoice">
+                <option value="decay10">10년 감소</option>
+                <option value="steady">초과이익 지속</option>
+                <option value="decay20">5년 감소</option>
+              </select>
+            </label>
+            <label>분석일 조정 (년)
+              <input id="dateAdjustmentYears" type="number" min="0" step="0.01" value="0">
+            </label>
+          </div>
+        </div>
+      </section>
+
+      <section class="panel result-layout" aria-labelledby="resultTitle">
+        <div class="panel-head">
+          <h2 id="resultTitle">결과</h2>
+          <div class="meta" id="calcMeta">S-RIM 잔여이익모델</div>
+        </div>
+
+        <div class="kpis">
+          <div class="kpi" id="fairKpi">
+            <div class="label">선택 적정주가</div>
+            <div class="value" id="fairPrice">-</div>
+          </div>
+          <div class="kpi" id="upsideKpi">
+            <div class="label">적정가 대비</div>
+            <div class="value" id="upside">-</div>
+          </div>
+          <div class="kpi">
+            <div class="label">매수 기준가</div>
+            <div class="value" id="buyPrice">-</div>
+          </div>
+          <div class="kpi" id="signalKpi">
+            <div class="label">판정</div>
+            <div class="value" id="signal">-</div>
+          </div>
+        </div>
+
+        <div class="tabs" role="tablist" aria-label="결과 보기">
+          <button class="tab active" type="button" data-view="summary">시나리오</button>
+          <button class="tab" type="button" data-view="forecast">연도별 계산</button>
+          <button class="tab" type="button" data-view="check">검토</button>
+        </div>
+
+        <div class="scenario-wrap" data-pane="summary">
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>시나리오</th>
+                  <th>감소계수</th>
+                  <th>기업가치</th>
+                  <th>주당가치</th>
+                  <th>현재가 대비</th>
+                  <th>매수 기준</th>
+                  <th>매도 기준</th>
+                </tr>
+              </thead>
+              <tbody id="scenarioRows"></tbody>
+            </table>
+          </div>
+          <div class="analysis-grid">
+            <svg class="chart" id="valueChart" role="img" aria-label="시나리오별 주당가치 차트"></svg>
+            <div class="note-box">
+              <h3>핵심 입력값</h3>
+              <ul id="inputSummary"></ul>
+            </div>
+          </div>
+        </div>
+
+        <div class="scenario-wrap" data-pane="forecast" hidden>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>연도</th>
+                  <th>ROE</th>
+                  <th>기초 지배주주지분</th>
+                  <th>순이익</th>
+                  <th>초과이익</th>
+                  <th>초과이익 PV</th>
+                  <th>기말 지배주주지분</th>
+                </tr>
+              </thead>
+              <tbody id="forecastRows"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="scenario-wrap" data-pane="check" hidden>
+          <div class="analysis-grid">
+            <div class="note-box">
+              <h3>계산 점검</h3>
+              <ul id="checkList"></ul>
+            </div>
+            <div class="note-box">
+              <h3>엑셀 반영 범위</h3>
+              <ul>
+                <li>주당가치 = 기업가치(억원) x 100,000,000 / 유통 기준 주식수</li>
+                <li>요구수익률은 엑셀의 직접 적용 방식과 CAPM 방식을 모두 지원</li>
+                <li>초과이익 지속, 10년 감소, 5년 감소 시나리오를 같은 방식으로 계산</li>
+                <li>배당과 이벤트 분석은 기본 S-RIM 값과 분리해 수동 입력으로 관리</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+
+        <div class="status-line">
+          <span><span class="source-dot">●</span> 데이터: <span id="dataStamp">수동</span></span>
+          <span>유통 기준 주식수: <span id="shareCountText">-</span></span>
+          <span>적용 요구수익률: <span id="requiredReturnText">-</span></span>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <script>
+    const DEFAULT_DATA = {
+      generatedAt: "2026-05-24T00:00:00+09:00",
+      market: {
+        riskFreeRate: 0.016,
+        marketRiskPremium: 0.0664,
+        defaultRequiredReturn: 0.0805,
+        source: "S-RIM 마법사 Plus V23 기본값"
+      },
+      stocks: [
+        {
+          code: "005930",
+          name: "삼성전자",
+          market: "KOSPI",
+          currentPrice: 292500,
+          shares: 5846278608,
+          asOf: "2026.05.22",
+          sourceUrl: "https://finance.naver.com/item/main.naver?code=005930"
+        }
+      ]
+    };
+
+    const state = {
+      latest: DEFAULT_DATA,
+      selectedStock: null,
+      lastResult: null
+    };
+
+    const $ = (id) => document.getElementById(id);
+    const inputs = [
+      "stockCode", "companyName", "currentPrice", "commonShares", "preferredShares",
+      "treasuryShares", "marginOfSafety", "equityEok", "netIncomeEok", "roe",
+      "beta", "requiredReturn", "riskFreeRate", "marketRiskPremium",
+      "scenarioChoice", "dateAdjustmentYears"
+    ];
+
+    function num(id) {
+      const value = parseFloat($(id).value);
+      return Number.isFinite(value) ? value : 0;
+    }
+
+    function getRadio(name) {
+      return document.querySelector(`input[name="${name}"]:checked`)?.value;
+    }
+
+    function setValue(id, value) {
+      if (value !== undefined && value !== null && value !== "") $(id).value = value;
+    }
+
+    function fmtWon(value) {
+      if (!Number.isFinite(value)) return "-";
+      return `${Math.round(value).toLocaleString("ko-KR")}원`;
+    }
+
+    function fmtEok(value) {
+      if (!Number.isFinite(value)) return "-";
+      return `${Math.round(value).toLocaleString("ko-KR")}억`;
+    }
+
+    function fmtPct(value, digits = 1) {
+      if (!Number.isFinite(value)) return "-";
+      return `${(value * 100).toFixed(digits)}%`;
+    }
+
+    function fmtRatio(value, digits = 2) {
+      if (!Number.isFinite(value)) return "-";
+      return value.toFixed(digits);
+    }
+
+    function getInputModel() {
+      const commonShares = num("commonShares");
+      const preferredShares = num("preferredShares");
+      const treasuryShares = num("treasuryShares");
+      const shareCount = Math.max(commonShares + preferredShares - treasuryShares, 0);
+      const equityEok = num("equityEok");
+      const netIncomeEok = num("netIncomeEok");
+      const roeMode = getRadio("roeMode");
+      const roe = roeMode === "auto" && equityEok > 0 ? netIncomeEok / equityEok : num("roe");
+      const discountMode = getRadio("discountMode");
+      const requiredReturn = discountMode === "capm"
+        ? num("riskFreeRate") + num("marketRiskPremium") * num("beta")
+        : num("requiredReturn");
+
+      return {
+        code: $("stockCode").value.trim(),
+        companyName: $("companyName").value.trim(),
+        currentPrice: num("currentPrice"),
+        commonShares,
+        preferredShares,
+        treasuryShares,
+        shareCount,
+        marginOfSafety: num("marginOfSafety"),
+        equityEok,
+        netIncomeEok,
+        roe,
+        beta: num("beta"),
+        riskFreeRate: num("riskFreeRate"),
+        marketRiskPremium: num("marketRiskPremium"),
+        requiredReturn,
+        scenarioChoice: $("scenarioChoice").value,
+        dateAdjustmentYears: Math.max(num("dateAdjustmentYears"), 0)
+      };
+    }
+
+    function computeScenario(model, scenario) {
+      const years = [];
+      let equity = model.equityEok;
+      let pvResidualIncome = 0;
+      const spread = model.roe - model.requiredReturn;
+
+      for (let year = 1; year <= 10; year += 1) {
+        const decayFactor = Math.max(1 - scenario.decay * year, 0);
+        const roeYear = model.requiredReturn + spread * decayFactor;
+        const beginningEquity = equity;
+        const netIncome = beginningEquity * roeYear;
+        const residualIncome = netIncome - beginningEquity * model.requiredReturn;
+        const pv = residualIncome / Math.pow(1 + model.requiredReturn, year);
+        pvResidualIncome += pv;
+        equity = beginningEquity + netIncome;
+        years.push({ year, roeYear, beginningEquity, netIncome, residualIncome, pv, endingEquity: equity });
+      }
+
+      const businessValueEok = (model.equityEok + pvResidualIncome) / Math.pow(1 + model.requiredReturn, model.dateAdjustmentYears);
+      const fairPrice = model.shareCount > 0 ? businessValueEok * 100000000 / model.shareCount : NaN;
+      const upside = model.currentPrice > 0 ? fairPrice / model.currentPrice - 1 : NaN;
+      const buyPrice = fairPrice * (1 - model.marginOfSafety);
+      const sellPrice = fairPrice * (1 + model.marginOfSafety);
+
+      return { ...scenario, years, businessValueEok, fairPrice, upside, buyPrice, sellPrice, pvResidualIncome };
+    }
+
+    function calculate() {
+      const model = getInputModel();
+      const scenarios = [
+        { key: "steady", name: "초과이익 10년 지속", decay: 0 },
+        { key: "decay10", name: "초과이익 매년 10% 감소", decay: 0.1 },
+        { key: "decay20", name: "초과이익 매년 20% 감소", decay: 0.2 }
+      ].map((scenario) => computeScenario(model, scenario));
+
+      const selected = scenarios.find((item) => item.key === model.scenarioChoice) || scenarios[1];
+      state.lastResult = { model, scenarios, selected };
+      renderResult();
+    }
+
+    function signalFor(model, selected) {
+      if (!Number.isFinite(selected.fairPrice) || selected.fairPrice <= 0) return { text: "입력 확인", kind: "warn" };
+      if (model.currentPrice <= selected.buyPrice) return { text: "매수 관심", kind: "good" };
+      if (model.currentPrice >= selected.sellPrice) return { text: "고평가", kind: "bad" };
+      return { text: "중립", kind: "warn" };
+    }
+
+    function renderResult() {
+      const { model, scenarios, selected } = state.lastResult;
+      const signal = signalFor(model, selected);
+
+      $("fairPrice").textContent = fmtWon(selected.fairPrice);
+      $("upside").textContent = fmtPct(selected.upside);
+      $("buyPrice").textContent = fmtWon(selected.buyPrice);
+      $("signal").textContent = signal.text;
+      $("calcMeta").textContent = `${model.companyName || model.code || "종목"} · ${selected.name}`;
+      $("shareCountText").textContent = model.shareCount.toLocaleString("ko-KR");
+      $("requiredReturnText").textContent = fmtPct(model.requiredReturn, 2);
+
+      $("fairKpi").className = "kpi";
+      $("upsideKpi").className = `kpi ${selected.upside >= 0 ? "good" : "bad"}`;
+      $("signalKpi").className = `kpi ${signal.kind}`;
+
+      $("scenarioRows").innerHTML = scenarios.map((item) => {
+        const kind = item.upside >= model.marginOfSafety ? "good" : item.upside < -model.marginOfSafety ? "bad" : "warn";
+        return `<tr>
+          <td><span class="scenario-name">${item.name}</span></td>
+          <td>${fmtPct(item.decay, 0)}</td>
+          <td>${fmtEok(item.businessValueEok)}</td>
+          <td>${fmtWon(item.fairPrice)}</td>
+          <td><span class="pill ${kind}">${fmtPct(item.upside)}</span></td>
+          <td>${fmtWon(item.buyPrice)}</td>
+          <td>${fmtWon(item.sellPrice)}</td>
+        </tr>`;
+      }).join("");
+
+      $("forecastRows").innerHTML = selected.years.map((year) => `<tr>
+        <td>${year.year}년차</td>
+        <td>${fmtPct(year.roeYear, 2)}</td>
+        <td>${fmtEok(year.beginningEquity)}</td>
+        <td>${fmtEok(year.netIncome)}</td>
+        <td>${fmtEok(year.residualIncome)}</td>
+        <td>${fmtEok(year.pv)}</td>
+        <td>${fmtEok(year.endingEquity)}</td>
+      </tr>`).join("");
+
+      $("inputSummary").innerHTML = [
+        `현재주가 ${fmtWon(model.currentPrice)}, 시가총액 ${fmtEok(model.currentPrice * model.shareCount / 100000000)}`,
+        `지배주주지분 ${fmtEok(model.equityEok)}, 지배주주순이익 ${fmtEok(model.netIncomeEok)}`,
+        `ROE ${fmtPct(model.roe, 2)}, 요구수익률 ${fmtPct(model.requiredReturn, 2)}, Spread ${fmtPct(model.roe - model.requiredReturn, 2)}`,
+        `안전마진 ${fmtPct(model.marginOfSafety, 0)}, 분석일 조정 ${fmtRatio(model.dateAdjustmentYears)}년`
+      ].map((text) => `<li>${text}</li>`).join("");
+
+      const checks = [];
+      if (model.shareCount <= 0) checks.push(["bad", "유통 기준 주식수가 0 이하입니다."]);
+      if (model.equityEok <= 0) checks.push(["bad", "지배주주지분이 0 이하입니다."]);
+      if (model.requiredReturn <= 0) checks.push(["bad", "요구수익률이 0 이하입니다."]);
+      if (model.roe < model.requiredReturn) checks.push(["warn", "ROE가 요구수익률보다 낮아 초과이익이 음수입니다."]);
+      if (model.marginOfSafety < 0.1) checks.push(["warn", "안전마진이 낮게 설정되어 있습니다."]);
+      if (!checks.length) checks.push(["good", "필수 입력값과 계산 범위가 정상입니다."]);
+      checks.push(["good", `선택 시나리오의 PV of RI는 ${fmtEok(selected.pvResidualIncome)}입니다.`]);
+      $("checkList").innerHTML = checks.map(([kind, text]) => `<li><span class="pill ${kind}">${kind === "good" ? "OK" : kind === "bad" ? "확인" : "주의"}</span> ${text}</li>`).join("");
+
+      renderChart(model, scenarios);
+    }
+
+    function renderChart(model, scenarios) {
+      const svg = $("valueChart");
+      const width = svg.clientWidth || 600;
+      const height = svg.clientHeight || 240;
+      const pad = { top: 22, right: 18, bottom: 50, left: 76 };
+      const values = [model.currentPrice, ...scenarios.map((item) => item.fairPrice), ...scenarios.map((item) => item.buyPrice)].filter(Number.isFinite);
+      const max = Math.max(...values, 1) * 1.12;
+      const plotW = width - pad.left - pad.right;
+      const plotH = height - pad.top - pad.bottom;
+      const bars = [
+        { label: "현재", value: model.currentPrice, cls: "bar-current" },
+        ...scenarios.map((item) => ({ label: item.decay === 0 ? "지속" : item.decay === 0.1 ? "10%감소" : "20%감소", value: item.fairPrice, cls: "bar-fair" }))
+      ];
+      const gap = 16;
+      const barW = Math.max(28, (plotW - gap * (bars.length - 1)) / bars.length);
+      const axisY = pad.top + plotH;
+      const items = bars.map((bar, idx) => {
+        const x = pad.left + idx * (barW + gap);
+        const h = Math.max(0, bar.value / max * plotH);
+        const y = axisY - h;
+        return `<rect class="${bar.cls}" x="${x}" y="${y}" width="${barW}" height="${h}" rx="4"></rect>
+          <text class="chart-label" x="${x + barW / 2}" y="${axisY + 18}" text-anchor="middle">${bar.label}</text>
+          <text class="chart-label" x="${x + barW / 2}" y="${Math.max(y - 7, 14)}" text-anchor="middle">${Math.round(bar.value / 1000).toLocaleString("ko-KR")}천</text>`;
+      }).join("");
+      const grid = [0, 0.25, 0.5, 0.75, 1].map((ratio) => {
+        const y = axisY - ratio * plotH;
+        const value = max * ratio;
+        return `<line x1="${pad.left}" y1="${y}" x2="${width - pad.right}" y2="${y}" stroke="#e5e7eb"></line>
+          <text class="chart-label" x="${pad.left - 8}" y="${y + 4}" text-anchor="end">${Math.round(value / 1000).toLocaleString("ko-KR")}천</text>`;
+      }).join("");
+      svg.setAttribute("viewBox", `0 0 ${width} ${height}`);
+      svg.innerHTML = `${grid}<line x1="${pad.left}" y1="${axisY}" x2="${width - pad.right}" y2="${axisY}" stroke="#cbd5e1"></line>${items}`;
+    }
+
+    function populateStockPicker() {
+      const stocks = state.latest.stocks || [];
+      $("stockPicker").innerHTML = [
+        `<option value="">수동 입력</option>`,
+        ...stocks.map((stock) => `<option value="${stock.code}">${stock.code} · ${stock.name || stock.code}</option>`)
+      ].join("");
+    }
+
+    function applyMarketDefaults() {
+      const market = state.latest.market || {};
+      setValue("riskFreeRate", market.riskFreeRate);
+      setValue("marketRiskPremium", market.marketRiskPremium);
+      setValue("requiredReturn", market.defaultRequiredReturn);
+    }
+
+    function applyStock(stock) {
+      if (!stock) return;
+      state.selectedStock = stock;
+      setValue("stockCode", stock.code);
+      setValue("companyName", stock.name);
+      setValue("currentPrice", stock.currentPrice);
+      setValue("commonShares", stock.shares);
+      $("selectedSource").textContent = `${stock.asOf || "최신"} · ${stock.market || "시장"}`;
+      $("dataStamp").textContent = stock.asOf || state.latest.generatedAt || "latest.json";
+      calculate();
+    }
+
+    async function loadLatestData() {
+      try {
+        const response = await fetch("data/latest.json", { cache: "no-store" });
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        state.latest = await response.json();
+        $("dataStatus").textContent = `기준값 ${formatDataDate(state.latest.generatedAt)}`;
+      } catch (error) {
+        state.latest = DEFAULT_DATA;
+        $("dataStatus").textContent = "기본 기준값 사용";
+      }
+      populateStockPicker();
+      applyMarketDefaults();
+      const firstStock = state.latest.stocks?.[0];
+      if (firstStock) {
+        $("stockPicker").value = firstStock.code;
+        applyStock(firstStock);
+      } else {
+        calculate();
+      }
+    }
+
+    function formatDataDate(value) {
+      if (!value) return "수동";
+      const date = new Date(value);
+      if (Number.isNaN(date.getTime())) return value;
+      return new Intl.DateTimeFormat("ko-KR", { dateStyle: "medium", timeStyle: "short" }).format(date);
+    }
+
+    function saveCase() {
+      const payload = {};
+      inputs.forEach((id) => payload[id] = $(id).value);
+      payload.roeMode = getRadio("roeMode");
+      payload.discountMode = getRadio("discountMode");
+      localStorage.setItem("srim-case", JSON.stringify(payload));
+      $("dataStatus").textContent = "현재 입력값 저장됨";
+    }
+
+    function loadSavedCase() {
+      const raw = localStorage.getItem("srim-case");
+      if (!raw) return false;
+      try {
+        const payload = JSON.parse(raw);
+        inputs.forEach((id) => setValue(id, payload[id]));
+        if (payload.roeMode) document.querySelector(`input[name="roeMode"][value="${payload.roeMode}"]`).checked = true;
+        if (payload.discountMode) document.querySelector(`input[name="discountMode"][value="${payload.discountMode}"]`).checked = true;
+        $("dataStatus").textContent = "저장된 입력값 불러옴";
+        calculate();
+        return true;
+      } catch {
+        return false;
+      }
+    }
+
+    function resetCase() {
+      localStorage.removeItem("srim-case");
+      Object.assign(state, { latest: DEFAULT_DATA, selectedStock: null, lastResult: null });
+      location.reload();
+    }
+
+    function attachEvents() {
+      inputs.forEach((id) => $(id).addEventListener("input", calculate));
+      document.querySelectorAll("input[type=radio]").forEach((input) => input.addEventListener("change", calculate));
+      $("calculateNow").addEventListener("click", calculate);
+      $("loadLatest").addEventListener("click", () => {
+        applyMarketDefaults();
+        const stock = (state.latest.stocks || []).find((item) => item.code === $("stockPicker").value) || state.latest.stocks?.[0];
+        applyStock(stock);
+      });
+      $("saveCase").addEventListener("click", saveCase);
+      $("resetCase").addEventListener("click", resetCase);
+      $("stockPicker").addEventListener("change", (event) => {
+        const stock = (state.latest.stocks || []).find((item) => item.code === event.target.value);
+        if (stock) applyStock(stock);
+      });
+      document.querySelectorAll(".tab").forEach((tab) => {
+        tab.addEventListener("click", () => {
+          document.querySelectorAll(".tab").forEach((item) => item.classList.toggle("active", item === tab));
+          document.querySelectorAll("[data-pane]").forEach((pane) => pane.hidden = pane.dataset.pane !== tab.dataset.view);
+          if (tab.dataset.view === "summary" && state.lastResult) renderChart(state.lastResult.model, state.lastResult.scenarios);
+        });
+      });
+      window.addEventListener("resize", () => {
+        if (state.lastResult) renderChart(state.lastResult.model, state.lastResult.scenarios);
+      });
+    }
+
+    attachEvents();
+    loadLatestData().then(() => {
+      if (!loadSavedCase()) calculate();
+    });
+  </script>
+</body>
+</html>
