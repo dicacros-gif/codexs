@@ -319,18 +319,24 @@ def fetch_screener_rows() -> list[dict]:
 
 
 def fetch_quote_payload(symbol: str) -> tuple[str, dict | None, dict | None, str | None]:
+    summary: dict | None = None
+    info: dict | None = None
+    errors: list[str] = []
     try:
         summary_payload = fetch_json(SUMMARY_URL.format(symbol=symbol.lower()), timeout=20)
-        info_payload = fetch_json(INFO_URL.format(symbol=symbol.lower()), timeout=20)
         summary = summary_payload.get("data", {}).get("summaryData", {})
-        info = info_payload.get("data", {})
         if not isinstance(summary, dict):
             summary = {}
+    except (HTTPError, URLError, TimeoutError, ValueError, OSError) as exc:
+        errors.append(f"summary: {exc}")
+    try:
+        info_payload = fetch_json(INFO_URL.format(symbol=symbol.lower()), timeout=20)
+        info = info_payload.get("data", {})
         if not isinstance(info, dict):
             info = {}
-        return symbol, summary, info, None
     except (HTTPError, URLError, TimeoutError, ValueError, OSError) as exc:
-        return symbol, None, None, str(exc)
+        errors.append(f"info: {exc}")
+    return symbol, summary, info, "; ".join(errors) if errors else None
 
 
 def fetch_quote_summary(symbol: str) -> tuple[str, dict | None, str | None]:
@@ -783,7 +789,7 @@ def merge_quote(base: dict, summary: dict | None, info: dict | None) -> dict:
         "volume": volume,
         "sector": sector,
         "industry": industry,
-        "exchange": strip_html(deep_value(info, "exchange")) or None,
+        "exchange": strip_html(deep_value(info, "exchange")) or nested_value(summary or {}, "Exchange") or None,
         "stockType": strip_html(deep_value(info, "stockType")) or None,
         "marketStatus": strip_html(deep_value(info, "marketStatus")) or None,
         "priceAsOf": strip_html(deep_value(info, "primaryData", "lastTradeTimestamp")) or None,
