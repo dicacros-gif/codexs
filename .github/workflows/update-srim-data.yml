@@ -8,8 +8,11 @@ on:
       - ".github/workflows/update-srim-data.yml"
       - "scripts/**"
   schedule:
-    # Runs every day at 20:30 KST. GitHub cron uses UTC, so this is 11:30 UTC.
+    # Primary daily run at 20:30 KST. GitHub cron uses UTC, so this is 11:30 UTC.
     - cron: "30 11 * * *"
+    # Fixed retry windows. They crawl only when today's JSON is still stale.
+    - cron: "10 12 * * *"
+    - cron: "50 12 * * *"
   workflow_dispatch:
 
 permissions:
@@ -23,6 +26,7 @@ concurrency:
 
 jobs:
   update:
+    timeout-minutes: 90
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
@@ -38,12 +42,22 @@ jobs:
         with:
           python-version: "3.11"
 
+      - name: Decide whether fresh data is needed
+        id: freshness
+        run: python scripts/check_data_freshness.py decide
+
       - name: Refresh latest market data
+        if: steps.freshness.outputs.needs_update == 'true'
         run: |
           python scripts/update_market_data.py
           python scripts/update_us_market_data.py
 
+      - name: Validate refreshed data
+        if: steps.freshness.outputs.needs_update == 'true'
+        run: python scripts/check_data_freshness.py validate
+
       - name: Commit changes
+        if: steps.freshness.outputs.needs_update == 'true'
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
@@ -52,13 +66,16 @@ jobs:
           git push
 
       - name: Configure Pages
+        if: steps.freshness.outputs.needs_update == 'true'
         uses: actions/configure-pages@v5
 
       - name: Upload Pages artifact
+        if: steps.freshness.outputs.needs_update == 'true'
         uses: actions/upload-pages-artifact@v3
         with:
           path: .
 
       - name: Deploy to GitHub Pages
+        if: steps.freshness.outputs.needs_update == 'true'
         id: deployment
         uses: actions/deploy-pages@v4
