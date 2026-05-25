@@ -2040,8 +2040,7 @@
 
     function fmtGrowth(value, increased = null) {
       if (!Number.isFinite(value)) return "-";
-      const label = increased === true ? "상승" : increased === false ? "하락" : value >= 0 ? "상승" : "하락";
-      return `${fmtSignedPct(value)} · ${label}`;
+      return fmtSignedPct(value);
     }
 
     function heatStyle(value, cap = 1) {
@@ -2103,6 +2102,29 @@
 
     function futureEpsGrowthFor(stock) {
       return firstFiniteMetric(stock?.futureEpsGrowth, stock?.forwardEpsGrowth, stock?.epsGrowthForecast5Y);
+    }
+
+    function hasNegativeMetric(stock, fields) {
+      return fields.some((field) => {
+        const value = finiteNumber(stock?.[field]);
+        return Number.isFinite(value) && value < 0;
+      });
+    }
+
+    function isKrProfitableForRanking(stock) {
+      return !hasNegativeMetric(stock, [
+        "operatingIncomeEok",
+        "netIncomeQuarterEok",
+        "controllingNetIncomeQuarterEok"
+      ]);
+    }
+
+    function isUsProfitableForRanking(stock) {
+      return !hasNegativeMetric(stock, [
+        "ttmNetIncome",
+        "netIncomeQuarterMillions",
+        "ttmEps"
+      ]);
     }
 
     function fmtCount(value) {
@@ -2242,6 +2264,7 @@
       const scenario = { key: "decay10", name: "초과이익 매년 10% 감소", decay: 0.1 };
       return (state.latest.stocks || [])
         .map((stock) => {
+          if (!isKrProfitableForRanking(stock)) return null;
           const model = modelFromStock(stock);
           if (!model) return null;
           const value = computeScenario(model, scenario);
@@ -2380,7 +2403,7 @@
       const kospiRows = rowsByMarket.KOSPI.slice(0, 100);
       const kosdaqRows = rowsByMarket.KOSDAQ.slice(0, 100);
 
-      $("rankSummary").textContent = `KOSPI 100 · KOSDAQ 100 · PER 1~80, ROE 8.05~80%, 거래량 있는 종목`;
+      $("rankSummary").textContent = `KOSPI 100 · KOSDAQ 100 · PER 1~80, ROE 8.05~80%, 거래량 있는 종목 · 적자 제외`;
       $("rankKospiSummary").textContent = `${rowsByMarket.KOSPI.length.toLocaleString("ko-KR")}개 계산 가능 중 상위 ${kospiRows.length.toLocaleString("ko-KR")}개`;
       $("rankKosdaqSummary").textContent = `${rowsByMarket.KOSDAQ.length.toLocaleString("ko-KR")}개 계산 가능 중 상위 ${kosdaqRows.length.toLocaleString("ko-KR")}개`;
 
@@ -2974,6 +2997,7 @@
       return usStocks().filter((stock) => {
         if (state.usRankExchange !== "ALL" && usExchangeGroup(stock) !== state.usRankExchange) return false;
         if (state.usRankTheme && !usThemeTags(stock).includes(state.usRankTheme)) return false;
+        if (!isUsProfitableForRanking(stock)) return false;
         return finiteNumber(stock.price) > 0;
       });
     }
@@ -3044,7 +3068,7 @@
       const total = usStocks().length;
       const exchangeText = state.usRankExchange === "ALL" ? "전체 거래소" : state.usRankExchange;
       const themeText = state.usRankTheme || "전체 상세 테마";
-      $("usRankSummary").textContent = `${total.toLocaleString("ko-KR")}개 중 ${rows.length.toLocaleString("ko-KR")}개 계산 가능 · ${exchangeText} · ${themeText}`;
+      $("usRankSummary").textContent = `${total.toLocaleString("ko-KR")}개 중 ${rows.length.toLocaleString("ko-KR")}개 계산 가능 · 적자 제외 · ${exchangeText} · ${themeText}`;
 
       if (!visible.length) {
         $("usRankRows").innerHTML = `<tr><td colspan="32">조건에 맞는 미국 저평가 종목이 없습니다.</td></tr>`;
